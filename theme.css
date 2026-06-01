@@ -228,7 +228,7 @@ body {
   }
 }
 
-
+/* Vanilla CSS */
 .toast {
   animation: slideInFromRight 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   background-color: color-mix(in srgb, var(--card-bg) 80%, transparent);
