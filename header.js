@@ -8,9 +8,9 @@ export function renderHeader() {
 
   container.innerHTML = `
     <!-- Announcement Bar -->
-    <div class="bg-surface border-b border-border text-text-primary text-center py-2 px-4 text-xs font-semibold tracking-wider relative z-[40]" id="announcement-bar">
+    <marquee class="bg-surface border-b border-border text-text-primary text-center py-2 px-4 text-xs font-semibold tracking-wider relative z-[40]" id="announcement-bar">
       ✨ SPECIAL OPENING OFFER: GET FREE SHIPPING ON ALL ORDERS ABOVE ₹1,999!
-    </div>
+    </marquee>
 
     <!-- Global Sticky Header -->
     <header class="sticky top-0 z-[50] bg-background-85 backdrop-blur-md border-b border-border-80 transition-colors duration-250">
