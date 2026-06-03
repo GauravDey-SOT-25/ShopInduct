@@ -8,7 +8,7 @@ export function renderHeader() {
 
   container.innerHTML = `
     <!-- Announcement Bar -->
-    <marquee class="bg-surface border-b border-border text-text-primary text-center py-2 px-4 text-xs font-semibold tracking-wider relative z-[40]" id="announcement-bar">
+    <marquee scrollamount="12" class="bg-surface border-b border-border text-text-primary text-center py-2 px-4 text-xs font-semibold tracking-wider relative z-[40]" id="announcement-bar">
       ✨ SPECIAL OPENING OFFER: GET FREE SHIPPING ON ALL ORDERS ABOVE ₹1,999!
     </marquee>
 
