@@ -1,4 +1,5 @@
-import { state, createProductCardHtml, bindCardInteractions } from './app.js';
+import { state, createProductCardHtml, bindCardInteractions, clearAllFilters } from './app.js';
+import { renderCatalog } from './categorypage.js';
 
 export function renderHomepage() {
   const appContainer = document.getElementById('app');
