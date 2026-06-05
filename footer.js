@@ -1,4 +1,5 @@
 import { state, showToast } from './app.js';
+import { renderCatalog } from './categorypage.js';
 
 export function renderFooter() {
   const container = document.getElementById('footer-container');
@@ -69,6 +70,8 @@ export function renderFooter() {
   // Bind category redirection links inside footer
   const electLink = document.getElementById('footer-link-electronics');
   const fashLink = document.getElementById('footer-link-fashion');
+  const homeLink = document.getElementById('footer-link-home');
+  const shopLink = document.getElementById('footer-link-shop');
 
   const handleFooterCategoryRedirect = (category) => {
     state.filters.categories = [category];
@@ -82,5 +85,20 @@ export function renderFooter() {
   }
   if (fashLink) {
     fashLink.addEventListener('click', () => handleFooterCategoryRedirect('Fashion'));
+  }
+  if (homeLink) {
+    homeLink.addEventListener('click', () => {
+      state.filters.categories = [];
+      state.filters.searchQuery = '';
+    });
+  }
+  if (shopLink) {
+    shopLink.addEventListener('click', () => {
+      state.filters.categories = [];
+      state.filters.searchQuery = '';
+      if (window.location.hash === '#shop') {
+        renderCatalog();
+      }
+    });
   }
 }
