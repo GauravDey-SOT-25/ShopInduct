@@ -75,6 +75,8 @@ export function renderHeader() {
             <a href="#shop" class="sub-nav-link relative text-[11px] font-semibold text-text-secondary tracking-wider uppercase py-2 hover:text-primary transition-colors" data-category="Electronics">Electronics</a>
             <a href="#shop" class="sub-nav-link relative text-[11px] font-semibold text-text-secondary tracking-wider uppercase py-2 hover:text-primary transition-colors" data-category="Fashion">Fashion</a>
             <a href="#shop" class="sub-nav-link relative text-[11px] font-semibold text-text-secondary tracking-wider uppercase py-2 hover:text-primary transition-colors" data-category="Home & Lifestyle">Home & Lifestyle</a>
+            <a href="#shop" class="sub-nav-link relative text-[11px] font-semibold text-text-secondary tracking-wider uppercase py-2 hover:text-primary transition-colors" data-category="Books">Books</a>
+            <a href="#shop" class="sub-nav-link relative text-[11px] font-semibold text-text-secondary tracking-wider uppercase py-2 hover:text-primary transition-colors" data-category="Sports">Sports</a>
           </div>
           <div class="text-xs text-text-secondary font-medium">
             <span>🏷️ Use Code: <strong class="text-primary">INDUCT10</strong> for 10% Off!</span>
