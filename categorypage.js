@@ -102,23 +102,6 @@ export function renderCategoryPage() {
             Clear All Filters
           </button>
         </aside>
-
-        <!-- Product Cards Catalog Grid -->
-        // <div>
-        //   <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6" id="catalog-product-grid">
-        //     <!-- Dynamic product cards -->
-        //   </div>
-
-        //   <!-- Catalog Empty Search / Filter States placeholder -->
-        //   <div class="flex flex-col items-center justify-center text-center p-16 bg-surface border border-border rounded-2xl gap-4 max-w-[500px] mx-auto hidden" id="catalog-empty-state">
-        //     <div class="text-text-muted bg-background-secondary p-4 rounded-full flex items-center justify-center">
-        //       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.608 10.608Z" /></svg>
-        //     </div>
-        //     <h3 class="text-lg font-bold text-text-primary">No products found</h3>
-        //     <p class="text-sm text-text-secondary leading-relaxed">We couldn't find any products in our warehouse matching your specific filter combinations. Try resetting filters or adjust sliders.</p>
-        //     <button class="inline-flex items-center justify-center px-6 py-3 text-sm font-semibold rounded-xl text-text-inverse bg-primary hover:bg-primary-hover transition duration-150 cursor-pointer" id="catalog-empty-clear-btn">Clear All Filters</button>
-        //   </div>
-        // </div>
         
       </div>
     </section>
