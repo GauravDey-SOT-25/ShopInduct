@@ -647,6 +647,19 @@ const routes = {
   '#checkout': () => renderCheckoutPage()
 };
 
+export function clearAllFilters() {
+  state.filters.searchQuery = '';
+  state.filters.categories = [];
+  state.filters.maxPrice = 6000;
+  state.filters.minRating = 0;
+  state.filters.sortBy = 'featured';
+  
+  const searchInput = document.getElementById('search-input');
+  if (searchInput) searchInput.value = '';
+  const mobileSearchInput = document.getElementById('mobile-search-input');
+  if (mobileSearchInput) mobileSearchInput.value = '';
+}
+
 function handleRouting() {
   const hash = window.location.hash || '#home';
 
@@ -673,7 +686,18 @@ function handleRouting() {
       link.classList.remove('active');
     }
   });
-
+  
+ const subNavbarLinks = document.querySelectorAll('.sub-nav-link');
+  const activeCategory = state.filters.categories.length > 0 ? state.filters.categories[0] : 'all';
+  subNavbarLinks.forEach(link => {
+    const linkCat = link.getAttribute('data-category');
+    if (linkCat === activeCategory) {
+      link.classList.add('active');
+    } else {
+      link.classList.remove('active');
+    }
+  });
+  
   const footerLinks = [
     { id: 'footer-link-home', href: '#home' },
     { id: 'footer-link-shop', href: '#shop' }
