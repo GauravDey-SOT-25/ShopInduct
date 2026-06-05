@@ -77,7 +77,7 @@ export function renderHomepage() {
         <div class="flex items-center justify-between mb-8">
           <h2 class="text-2xl font-extrabold text-text-primary tracking-tight">Shop by Category</h2>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
           <!-- Electronics Category -->
           <div class="relative rounded-2xl overflow-hidden aspect-[4/3] cursor-pointer shadow-premium-md group category-tile" data-category="Electronics">
             <img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.05]" src="https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=600&q=80" alt="Electronics Category" loading="lazy">
@@ -105,23 +105,22 @@ export function renderHomepage() {
             </div>
           </div>
 
-          <!-- Sports Category -->
-          <div class="relative rounded-2xl overflow-hidden aspect-[4/3] cursor-pointer shadow-premium-md group category-tile" data-category="Home & Lifestyle">
-            <img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.05]" src="https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=600&q=80" alt="Home & Lifestyle Category" loading="lazy">
-            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-6 text-white">
-              <h3 class="text-lg font-bold text-white mb-1">Sports</h3>
-              <span class="text-xs text-white opacity-80">20 Products</span>
-            </div>
-          </div
-
           <!-- Books Category -->
-          <div class="relative rounded-2xl overflow-hidden aspect-[4/3] cursor-pointer shadow-premium-md group category-tile" data-category="Home & Lifestyle">
-            <img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.05]" src="https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=600&q=80" alt="Home & Lifestyle Category" loading="lazy">
+          <div class="relative rounded-2xl overflow-hidden aspect-[4/3] cursor-pointer shadow-premium-md group category-tile" data-category="Books">
+            <img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.05]" src="https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&w=600&q=80" alt="Books Category" loading="lazy">
             <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-6 text-white">
               <h3 class="text-lg font-bold text-white mb-1">Books</h3>
               <span class="text-xs text-white opacity-80">20 Products</span>
             </div>
-          </div
+          </div>
+          <!-- Sports Category -->
+          <div class="relative rounded-2xl overflow-hidden aspect-[4/3] cursor-pointer shadow-premium-md group category-tile" data-category="Sports">
+            <img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.05]" src="https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=600&q=80" alt="Sports Category" loading="lazy">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-6 text-white">
+              <h3 class="text-lg font-bold text-white mb-1">Sports</h3>
+              <span class="text-xs text-white opacity-80">20 Products</span>
+            </div>
+          </div>
 
           
         </div>
