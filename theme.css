@@ -747,3 +747,16 @@ textarea::placeholder,
     grid-template-columns: 1fr !important;
   }
 }
+
+
+/* 9. Sticky Navbar Support container contents */
+#header-container {
+  display: contents;
+}
+/* 10. Trending Products Slider responsiveness (mobile only) */
+@media (max-width: 640px) {
+  #home-featured-products-slider .product-card-container {
+    min-width: 100% !important;
+    width: 100% !important;
+  }
+}
