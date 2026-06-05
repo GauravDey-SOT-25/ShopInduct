@@ -83,16 +83,16 @@ export function renderHomepage() {
             <img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.05]" src="https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=600&q=80" alt="Electronics Category" loading="lazy">
             <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-6 text-white">
               <h3 class="text-lg font-bold text-white mb-1">Electronics</h3>
-              <span class="text-xs text-white opacity-80">10 Products</span>
+              <span class="text-xs text-white opacity-80">20 Products</span>
             </div>
           </div>
 
-          <!-- Fashion Category -->
+          <!-- Clothing Category -->
           <div class="relative rounded-2xl overflow-hidden aspect-[4/3] cursor-pointer shadow-premium-md group category-tile" data-category="Fashion">
             <img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.05]" src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=600&q=80" alt="Fashion Category" loading="lazy">
             <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-6 text-white">
-              <h3 class="text-lg font-bold text-white mb-1">Fashion</h3>
-              <span class="text-xs text-white opacity-80">10 Products</span>
+              <h3 class="text-lg font-bold text-white mb-1">Clothing</h3>
+              <span class="text-xs text-white opacity-80">20 Products</span>
             </div>
           </div>
 
@@ -101,9 +101,29 @@ export function renderHomepage() {
             <img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.05]" src="https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=600&q=80" alt="Home & Lifestyle Category" loading="lazy">
             <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-6 text-white">
               <h3 class="text-lg font-bold text-white mb-1">Home & Kitchen</h3>
-              <span class="text-xs text-white opacity-80">10 Products</span>
+              <span class="text-xs text-white opacity-80">20 Products</span>
             </div>
           </div>
+
+          <!-- Sports Category -->
+          <div class="relative rounded-2xl overflow-hidden aspect-[4/3] cursor-pointer shadow-premium-md group category-tile" data-category="Home & Lifestyle">
+            <img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.05]" src="https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=600&q=80" alt="Home & Lifestyle Category" loading="lazy">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-6 text-white">
+              <h3 class="text-lg font-bold text-white mb-1">Sports</h3>
+              <span class="text-xs text-white opacity-80">20 Products</span>
+            </div>
+          </div
+
+          <!-- Books Category -->
+          <div class="relative rounded-2xl overflow-hidden aspect-[4/3] cursor-pointer shadow-premium-md group category-tile" data-category="Home & Lifestyle">
+            <img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.05]" src="https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=600&q=80" alt="Home & Lifestyle Category" loading="lazy">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-6 text-white">
+              <h3 class="text-lg font-bold text-white mb-1">Books</h3>
+              <span class="text-xs text-white opacity-80">20 Products</span>
+            </div>
+          </div
+
+          
         </div>
       </div>
 
