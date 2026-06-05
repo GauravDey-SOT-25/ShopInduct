@@ -1,6 +1,7 @@
 import { state, toggleCartDrawer, openProductModal, 
   openProfileModal, 
  showToast } from './app.js';
+import { renderCatalog } from './categorypage.js';
 
 export function renderHeader() {
   const container = document.getElementById('header-container');
@@ -108,7 +109,7 @@ function initThemeToggler() {
     state.theme = state.theme === 'light' ? 'dark' : 'light';
     localStorage.setItem('theme', state.theme);
     updateThemeUI(state.theme);
-    showToast(`Theme switched to ${state.theme} mode`, "info");
+    // showToast(`Theme switched to ${state.theme} mode`, "info");
   });
 }
 
