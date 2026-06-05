@@ -80,8 +80,8 @@ export function renderHomepage() {
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
           <!-- Electronics Category -->
           <div class="relative rounded-2xl overflow-hidden aspect-[4/3] cursor-pointer shadow-premium-md group category-tile" data-category="Electronics">
-            <img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.05]" src="https://images.unsplash.com/photo-1498049794561-7780e7231661?auto=format&fit=crop&w=600&q=80" alt="Electronics Category" loading="lazy">
-            <div class="absolute inset-0 bg-gradient-to-t from-overlay-dark/80 via-overlay-dark/10 to-transparent flex flex-col justify-end p-6 text-constant-white">
+            <img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.05]" src="https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=600&q=80" alt="Electronics Category" loading="lazy">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-6 text-constant-white">
               <h3 class="text-lg font-bold mb-1">Electronics</h3>
               <span class="text-xs opacity-80">4 Products</span>
             </div>
@@ -89,18 +89,16 @@ export function renderHomepage() {
 
           <!-- Fashion Category -->
           <div class="relative rounded-2xl overflow-hidden aspect-[4/3] cursor-pointer shadow-premium-md group category-tile" data-category="Fashion">
-            <img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.05]" src="https://images.unsplash.com/photo-1445205170230-053b830c6038?auto=format&fit=crop&w=600&q=80" alt="Fashion Category" loading="lazy">
-            <div class="absolute inset-0 bg-gradient-to-t from-overlay-dark/80 via-overlay-dark/10 to-transparent flex flex-col justify-end p-6 text-constant-white">
-              <h3 class="text-lg font-bold mb-1">Fashion</h3>
+            <img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.05]" src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=600&q=80" alt="Fashion Category" loading="lazy">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-6 text-constant-white">              <h3 class="text-lg font-bold mb-1">Fashion</h3>
               <span class="text-xs opacity-80">4 Products</span>
             </div>
           </div>
 
           <!-- Home Category -->
           <div class="relative rounded-2xl overflow-hidden aspect-[4/3] cursor-pointer shadow-premium-md group category-tile" data-category="Home & Lifestyle">
-            <img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.05]" src="https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=600&q=80" alt="Home & Lifestyle Category" loading="lazy">
-            <div class="absolute inset-0 bg-gradient-to-t from-overlay-dark/80 via-overlay-dark/10 to-transparent flex flex-col justify-end p-6 text-constant-white">
-              <h3 class="text-lg font-bold mb-1">Home & Lifestyle</h3>
+            <img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.05]" src="https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=600&q=80" alt="Home & Lifestyle Category" loading="lazy">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-6 text-constant-white">              <h3 class="text-lg font-bold mb-1">Home & Lifestyle</h3>
               <span class="text-xs opacity-80">4 Products</span>
             </div>
           </div>
