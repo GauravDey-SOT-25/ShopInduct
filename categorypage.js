@@ -119,6 +119,7 @@ export function renderCategoryPage() {
 
   // Bind filter interactive events
   initCatalogPageEvents();
+  renderCatalog();
 }
 
 function initCatalogPageEvents() {
@@ -142,6 +143,13 @@ function initCatalogPageEvents() {
         b.className = "category-pill-btn w-full text-left px-4 py-2.5 text-xs btn-premium";
       });
       btn.className = "category-pill-btn w-full text-left px-4 py-2.5 text-xs btn-premium active";
+      const category = btn.getAttribute('data-category');
+      if (category === 'all') {
+        state.filters.categories = [];
+      } else {
+        state.filters.categories = [category];
+      }
+      renderCatalog();
     });
   });
 
@@ -171,11 +179,35 @@ function initCatalogPageEvents() {
   // Clear filters click handlers
   if (clearBtn) {
   clearBtn.addEventListener('click', () => {
-    document.getElementById('filter-price-range').value = 6000;
-    document.getElementById('price-range-display').textContent = '₹6000';
+      document.getElementById('filter-price-range').value = 6000;
+      document.getElementById('price-range-display').textContent = '₹6000';
 
     const allRating = document.getElementById('rating-all');
-    if (allRating) allRating.checked = true;
+      if (allRating) allRating.checked = true;
+      
+      state.filters.categories = [];
+      renderCatalog();
+    });
+  }
+}
+export function renderCatalog() {
+  const activeCategory = state.filters.categories.length > 0 ? state.filters.categories[0] : 'all';
+  // Sync sidebar categories container buttons
+  document.querySelectorAll(".category-pill-btn").forEach((btn) => {
+    const btnCat = btn.getAttribute('data-category');
+    if (btnCat === activeCategory) {
+      btn.className = "category-pill-btn w-full text-left px-4 py-2.5 text-xs btn-premium active";
+    } else {
+      btn.className = "category-pill-btn w-full text-left px-4 py-2.5 text-xs btn-premium";
+    }
+  });
+  document.querySelectorAll('.sub-nav-link').forEach(link => {
+    const linkCat = link.getAttribute('data-category');
+    if (linkCat === activeCategory) {
+      link.classList.add('active');
+    } else {
+      link.classList.remove('active');
+    }
   });
 }
-}
+
