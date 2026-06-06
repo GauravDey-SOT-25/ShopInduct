@@ -158,30 +158,16 @@ function injectGlobalContainers() {
               Premium studio grade sound outputs, ergonomic memory foams, long active noise cancellation controls.
             </p>
 
-            <!-- Interactive Variant Configurator -->
-            <div class="flex flex-col gap-4 py-4 border-t border-b border-border my-3 modal-configurator">
-              <!-- Color Selection -->
-              <div class="flex flex-col gap-2 config-group">
-                <span class="text-xs font-bold text-text-secondary uppercase tracking-wide config-label">Color: <strong id="modal-selected-color" class="text-text-primary normal-case">Space Grey</strong></span>
-                <div class="flex gap-3 color-options">
-                  <button class="w-6 h-6 rounded-full border-2 border-surface shadow-sm cursor-pointer transition active color-swatch" data-color="Space Grey" style="background-color: #374151;" title="Space Grey" aria-label="Select Space Grey color"></button>
-                  <button class="w-6 h-6 rounded-full border-2 border-surface shadow-sm cursor-pointer transition active color-swatch" data-color="Matte Silver" style="background-color: #D1D5DB;" title="Matte Silver" aria-label="Select Matte Silver color"></button>
-                  <button class="w-6 h-6 rounded-full border-2 border-surface shadow-sm cursor-pointer transition active color-swatch" data-color="Sunset Gold" style="background-color: #F59E0B;" title="Sunset Gold" aria-label="Select Sunset Gold color"></button>
-                </div>
-              </div>
-              <!-- Dynamic Spec Selector (Sizes/Specs chips) -->
-              <div class="flex flex-col gap-2 config-group" id="modal-spec-group">
-                <span class="text-xs font-bold text-text-secondary uppercase tracking-wide config-label" id="modal-spec-label">Options:</span>
-                <div class="flex gap-2 flex-wrap spec-options" id="modal-spec-options">
-                  <!-- Dynamically injected spec options based on category -->
-                </div>
-              </div>
+           <!-- Interactive Variant Configurator -->
+            <div class="flex flex-col gap-4 py-4 my-3 modal-configurator">
+              
               <!-- Stock status -->
               <div class="inline-flex items-center gap-2 text-xs font-semibold text-success config-stock-badge" id="modal-stock-badge">
                 <span class="w-2.5 h-2.5 rounded-full bg-success inline-block pulse-dot-anim"></span>
                 <span id="modal-stock-text">In Stock — Limited quantities available</span>
               </div>
             </div>
+
 
             <div class="flex items-center justify-between mt-4 modal-product-footer">
               <span class="text-xl font-extrabold text-text-primary modal-product-price">₹2999</span>
