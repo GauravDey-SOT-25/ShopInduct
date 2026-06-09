@@ -38,3 +38,19 @@ export function saveUsers() {
     JSON.stringify(users)
   );
 }
+
+export function updateUserInfo(userId, updatedFields) {
+  const userIndex = users.findIndex(u => u.id === userId);
+  if (userIndex !== -1) {
+    users[userIndex] = { ...users[userIndex], ...updatedFields };
+    saveUsers();
+    
+    // Sync active session if it matches the updated user
+    const current = JSON.parse(localStorage.getItem("currentUser"));
+    if (current && current.id === userId) {
+      localStorage.setItem("currentUser", JSON.stringify(users[userIndex]));
+    }
+    return users[userIndex];
+  }
+  return null;
+}

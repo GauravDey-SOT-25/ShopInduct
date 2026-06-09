@@ -1,4 +1,4 @@
-import {state, createProductCardHtml, bindCardInteractions } from "./app.js";
+import { state, createProductCardHtml, bindCardInteractions, showToast } from "./app.js";
 
 export function renderCategoryPage() {
   const appContainer = document.getElementById("app");
@@ -8,7 +8,7 @@ export function renderCategoryPage() {
     <!-- ================= CATALOG / SHOP VIEW ================= -->
     <section id="catalog-view" class="max-w-[1280px] mx-auto px-4 py-8 pb-16 view fade-in">
       <div class="flex items-center justify-between mb-6 gap-4">
-        <div class="text-sm text-text-secondary font-medium" id="catalog-product-count">Showing 12 products</div>
+        <div class="text-sm text-text-secondary font-medium" id="catalog-product-count">Showing 0 products</div>
         <div class="flex items-center gap-4">
           <!-- Premium Sort Dropdown -->
           <div class="flex items-center">
@@ -43,7 +43,7 @@ export function renderCategoryPage() {
           <div class="flex flex-col gap-2.5 border-b border-border-80 pb-5">
             <span class="text-xs font-bold text-text-secondary uppercase tracking-wider mb-1">Category</span>
             <div class="flex flex-col gap-2" id="sidebar-categories-container">
-              <button type="button" class="category-pill-btn w-full text-left px-4 py-2.5 text-xs btn-premium active" data-category="all">
+              <button type="button" class="category-pill-btn w-full text-left px-4 py-2.5 text-xs btn-premium" data-category="all">
                 All Products
               </button>
               <button type="button" class="category-pill-btn w-full text-left px-4 py-2.5 text-xs btn-premium" data-category="Electronics">
@@ -61,16 +61,17 @@ export function renderCategoryPage() {
               <button type="button" class="category-pill-btn w-full text-left px-4 py-2.5 text-xs btn-premium" data-category="Sports">
                 Sports
               </button>
-            </div>          </div>
+            </div>
+          </div>
 
           <!-- Price sliding scale filter -->
           <div class="flex flex-col gap-3 border-b border-border-80 pb-5">
             <span class="text-sm font-semibold text-text-primary">Price Range</span>
             <div class="flex flex-col gap-2">
-              <input type="range" class="range-input" id="filter-price-range" min="600" max="6000" step="100" value="6000">
+              <input type="range" class="range-input" id="filter-price-range" min="0" max="25000" step="100" value="25000">
               <div class="flex justify-between text-xs text-text-secondary font-medium">
-                <span>Min: ₹600</span>
-                <span id="price-range-display" class="font-bold text-primary">₹6000</span>
+                <span>Min: ₹0</span>
+                <span id="price-range-display" class="font-bold text-primary">₹25000</span>
               </div>
             </div>
           </div>
@@ -79,22 +80,20 @@ export function renderCategoryPage() {
           <div class="flex flex-col gap-3 pb-5">
             <span class="text-sm font-semibold text-text-primary">Minimum Rating</span>
             <label class="flex items-center gap-2 text-sm text-text-secondary cursor-pointer">
-              <input type="radio" name="rating-filter" class="w-4 h-4 text-primary focus:ring-primary/20 filter-rating-radio cursor-pointer" id="rating-all" value="0">
+              <input type="radio" name="rating-filter" class="w-4 h-4 text-primary focus:ring-primary/20 filter-rating-radio cursor-pointer" id="rating-all" value="0" checked>
               All Ratings
             </label>
             <label class="flex items-center gap-2 text-sm text-text-secondary cursor-pointer">
               <input type="radio" name="rating-filter" class="w-4 h-4 text-primary focus:ring-primary/20 filter-rating-radio cursor-pointer" value="4.5">
               <span class="stars-row inline-flex items-center text-rating gap-[2px]">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" clip-rule="evenodd" /></svg>
+                ★ 4.5 & up
               </span>
-              <span>4.5 & up</span>
             </label>
             <label class="flex items-center gap-2 text-sm text-text-secondary cursor-pointer">
-              <input type="radio" name="rating-filter" class="w-4 h-4 text-primary focus:ring-primary/20 filter-rating-radio cursor-pointer" value="4.2">
+              <input type="radio" name="rating-filter" class="w-4 h-4 text-primary focus:ring-primary/20 filter-rating-radio cursor-pointer" value="4.0">
               <span class="stars-row inline-flex items-center text-rating gap-[2px]">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" clip-rule="evenodd" /></svg>
+                ★ 4.0 & up
               </span>
-              <span>4.2 & up</span>
             </label>
           </div>
 
@@ -102,12 +101,27 @@ export function renderCategoryPage() {
             Clear All Filters
           </button>
         </aside>
-        
+
+        <!-- Right Side: Products Grid wrapper -->
+        <div class="flex-grow flex flex-col gap-6">
+          <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6" id="catalog-products-grid">
+            <!-- Dynamic elements loaded via script -->
+          </div>
+          
+          <!-- Empty state inside search results -->
+          <div class="empty-state border border-border bg-surface rounded-2xl p-16 flex flex-col items-center justify-center text-center gap-4 hidden animate-fade-in" id="catalog-empty-state">
+            <div class="text-text-muted bg-background-secondary p-4 rounded-full flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" /></svg>
+            </div>
+            <h3 class="text-lg font-bold text-text-primary">No products match filters</h3>
+            <p class="text-xs text-text-secondary leading-relaxed max-w-[320px]">We couldn't find any premium hardware in this view. Try clearing active filters or searching for another term.</p>
+            <button class="inline-flex items-center justify-center px-4 py-2 text-xs font-semibold rounded-xl text-text-inverse bg-primary hover:bg-primary-hover transition duration-150 cursor-pointer" id="catalog-empty-clear-btn">Reset Filters</button>
+          </div>
+        </div>
       </div>
     </section>
   `;
 
-  // Bind filter interactive events
   initCatalogPageEvents();
   renderCatalog();
 }
@@ -119,26 +133,41 @@ function initCatalogPageEvents() {
   const clearBtn = document.getElementById("filters-clear-all-btn");
   const emptyClearBtn = document.getElementById("catalog-empty-clear-btn");
 
-  // Price range slider change
   if (priceRangeInput && priceDisplay) {
+    priceRangeInput.value = state.filters.maxPrice;
+    priceDisplay.textContent = `₹${state.filters.maxPrice}`;
     priceRangeInput.addEventListener("input", (e) => {
-     priceDisplay.textContent = `₹${e.target.value}`;
+      priceDisplay.textContent = `₹${e.target.value}`;
+      state.filters.maxPrice = parseInt(e.target.value);
+      renderCatalog();
     });
   }
 
-  // Categories pills click handlers (FIX 3)
+  if (sortSelect) {
+    sortSelect.value = state.filters.sortBy;
+    sortSelect.addEventListener("change", (e) => {
+      state.filters.sortBy = e.target.value;
+      renderCatalog();
+    });
+  }
+
+  // Category selection click handlers
   document.querySelectorAll(".category-pill-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
-      document.querySelectorAll(".category-pill-btn").forEach((b) => {
-        b.className = "category-pill-btn w-full text-left px-4 py-2.5 text-xs btn-premium";
-      });
-      btn.className = "category-pill-btn w-full text-left px-4 py-2.5 text-xs btn-premium active";
       const category = btn.getAttribute('data-category');
       if (category === 'all') {
         state.filters.categories = [];
       } else {
         state.filters.categories = [category];
       }
+      renderCatalog();
+    });
+  });
+
+  // Rating checks
+  document.querySelectorAll(".filter-rating-radio").forEach(radio => {
+    radio.addEventListener("change", (e) => {
+      state.filters.minRating = parseFloat(e.target.value);
       renderCatalog();
     });
   });
@@ -166,31 +195,53 @@ function initCatalogPageEvents() {
     });
   }
 
-  // Clear filters click handlers
-  if (clearBtn) {
-  clearBtn.addEventListener('click', () => {
-      document.getElementById('filter-price-range').value = 6000;
-      document.getElementById('price-range-display').textContent = '₹6000';
+  const clearAllAction = () => {
+    state.filters.maxPrice = 25000;
+    state.filters.minRating = 0;
+    state.filters.categories = [];
+    state.filters.searchQuery = '';
+    state.filters.sortBy = 'featured';
 
+    if (priceRangeInput) {
+      priceRangeInput.value = 25000;
+    }
+    if (priceDisplay) {
+      priceDisplay.textContent = '₹25000';
+    }
     const allRating = document.getElementById('rating-all');
-      if (allRating) allRating.checked = true;
-      
-      state.filters.categories = [];
-      renderCatalog();
-    });
+    if (allRating) allRating.checked = true;
+    if (sortSelect) sortSelect.value = 'featured';
+
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) searchInput.value = '';
+    const mobileSearchInput = document.getElementById('mobile-search-input');
+    if (mobileSearchInput) mobileSearchInput.value = '';
+
+    renderCatalog();
+  };
+
+  if (clearBtn) {
+    clearBtn.addEventListener('click', clearAllAction);
+  }
+  if (emptyClearBtn) {
+    emptyClearBtn.addEventListener('click', clearAllAction);
   }
 }
+
 export function renderCatalog() {
   const activeCategory = state.filters.categories.length > 0 ? state.filters.categories[0] : 'all';
-  // Sync sidebar categories container buttons
+  
+  // Sync sidebar pills
   document.querySelectorAll(".category-pill-btn").forEach((btn) => {
     const btnCat = btn.getAttribute('data-category');
     if (btnCat === activeCategory) {
-      btn.className = "category-pill-btn w-full text-left px-4 py-2.5 text-xs btn-premium active";
+      btn.classList.add('active');
     } else {
-      btn.className = "category-pill-btn w-full text-left px-4 py-2.5 text-xs btn-premium";
+      btn.classList.remove('active');
     }
   });
+
+  // Sync sub-navbar links
   document.querySelectorAll('.sub-nav-link').forEach(link => {
     const linkCat = link.getAttribute('data-category');
     if (linkCat === activeCategory) {
@@ -199,5 +250,55 @@ export function renderCatalog() {
       link.classList.remove('active');
     }
   });
-}
 
+  // Filtering
+  let filtered = state.products.filter(p => {
+    // Category check
+    const matchesCategory = activeCategory === 'all' || 
+      p.category.toLowerCase() === activeCategory.toLowerCase();
+
+    // Price check
+    const matchesPrice = p.price <= state.filters.maxPrice;
+
+    // Rating check
+    const matchesRating = p.rating >= state.filters.minRating;
+
+    // Search query check
+    const query = state.filters.searchQuery.toLowerCase().trim();
+    const matchesSearch = !query || 
+      p.title.toLowerCase().includes(query) || 
+      p.category.toLowerCase().includes(query) ||
+      (p.description && p.description.toLowerCase().includes(query));
+
+    return matchesCategory && matchesPrice && matchesRating && matchesSearch;
+  });
+
+  // Sorting
+  if (state.filters.sortBy === 'price-asc') {
+    filtered.sort((a, b) => a.price - b.price);
+  } else if (state.filters.sortBy === 'price-desc') {
+    filtered.sort((a, b) => b.price - a.price);
+  } else if (state.filters.sortBy === 'rating-desc') {
+    filtered.sort((a, b) => b.rating - a.rating);
+  }
+
+  // DOM elements update
+  const countEl = document.getElementById("catalog-product-count");
+  if (countEl) {
+    countEl.textContent = `Showing ${filtered.length} products`;
+  }
+
+  const grid = document.getElementById("catalog-products-grid");
+  const emptyState = document.getElementById("catalog-empty-state");
+
+  if (grid) {
+    if (filtered.length === 0) {
+      grid.innerHTML = '';
+      if (emptyState) emptyState.classList.remove('hidden');
+    } else {
+      if (emptyState) emptyState.classList.add('hidden');
+      grid.innerHTML = filtered.map(p => createProductCardHtml(p, false)).join('');
+      bindCardInteractions(grid);
+    }
+  }
+}

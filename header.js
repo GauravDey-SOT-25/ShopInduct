@@ -1,11 +1,13 @@
-import { state, toggleCartDrawer, openProductModal, 
-  openProfileModal, 
- showToast } from './app.js';
+import { state, toggleCartDrawer, openProductModal, openProfileModal, showToast } from './app.js';
 import { renderCatalog } from './categorypage.js';
 
 export function renderHeader() {
   const container = document.getElementById('header-container');
   if (!container) return;
+
+  const profileButtonContent = state.user 
+    ? `<div class="w-7 h-7 rounded-full bg-primary text-text-inverse flex items-center justify-center text-xs font-black shadow-sm">${(state.user.firstName || state.user.name || 'U').charAt(0).toUpperCase()}</div>`
+    : `<svg id="nav-profile-btn-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>`;
 
   container.innerHTML = `
     <!-- Announcement Bar -->
@@ -30,7 +32,7 @@ export function renderHeader() {
         </div>
 
         <!-- Live Search Bar Container (Desktop) -->
-        <div class="search-container hidden md:block flex-1 max-w-[500px] relative">
+        <div class="search-container hidden md:block flex-1 max-w-[420px] relative">
           <div class="relative w-full">
             <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none w-[18px] h-[18px]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.608 10.608Z" /></svg>
             <input type="text" class="w-full pl-10 pr-4 py-2 bg-surface-elevated-40 border border-border rounded-xl text-sm text-text-primary outline-none focus:bg-surface focus:border-primary focus-ring-primary-15 transition-all" id="search-input" placeholder="Search premium items... (e.g. Headphones)" autocomplete="off">
@@ -54,7 +56,7 @@ export function renderHeader() {
 
           <!-- User Profile Icon -->
           <button class="relative w-9 h-9 flex items-center justify-center text-text-secondary hover:text-text-primary bg-surface border border-border rounded-lg cursor-pointer transition-all duration-150" id="nav-profile-btn" title="View Profile" aria-label="Open user profile modal">
-            <svg id="nav-profile-btn-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
+            ${profileButtonContent}
           </button>
         </div>
       </div>
@@ -70,7 +72,7 @@ export function renderHeader() {
       <!-- Category Sub-Navbar (Visible on desktop/tablets) -->
       <div class="sub-navbar border-t border-border-80 bg-background-85 backdrop-blur-md hidden">
         <div class="max-w-[1280px] mx-auto px-4 flex items-center justify-between h-[44px]">
-          <div class="flex gap-6">
+          <div class="flex gap-6 animate-fade-in">
             <a href="#shop" class="sub-nav-link active relative text-[11px] font-semibold text-text-secondary tracking-wider uppercase py-2 hover:text-primary transition-colors" data-category="all">All Catalog</a>
             <a href="#shop" class="sub-nav-link relative text-[11px] font-semibold text-text-secondary tracking-wider uppercase py-2 hover:text-primary transition-colors" data-category="Electronics">Electronics</a>
             <a href="#shop" class="sub-nav-link relative text-[11px] font-semibold text-text-secondary tracking-wider uppercase py-2 hover:text-primary transition-colors" data-category="Fashion">Fashion</a>
@@ -86,12 +88,13 @@ export function renderHeader() {
     </header>
   `;
 
-  // Bind modern addEventListeners
+  // Bind theme and controls
   initThemeToggler();
   initCartDrawerControls();
   initCartDrawerBtn();
   initSubNavbarLinks();
   initProfileBtn();
+  initSearchAutocomplete();
 }
 
 function initThemeToggler() {
@@ -111,7 +114,6 @@ function initThemeToggler() {
     state.theme = state.theme === 'light' ? 'dark' : 'light';
     localStorage.setItem('theme', state.theme);
     updateThemeUI(state.theme);
-    // showToast(`Theme switched to ${state.theme} mode`, "info");
   });
 }
 
@@ -175,5 +177,85 @@ function initSubNavbarLinks() {
 
       showToast(`Showing ${category === 'all' ? 'All' : category} products`, "info");
     });
+  });
+}
+
+function initSearchAutocomplete() {
+  const searchInput = document.getElementById('search-input');
+  const mobileSearchInput = document.getElementById('mobile-search-input');
+  const dropdown = document.getElementById('search-dropdown');
+
+  const handleSearch = (inputVal) => {
+    state.filters.searchQuery = inputVal;
+    
+    if (!inputVal.trim()) {
+      if (dropdown) dropdown.classList.add('hidden');
+      return;
+    }
+
+    const matches = state.products.filter(p => 
+      p.title.toLowerCase().includes(inputVal.toLowerCase()) || 
+      p.category.toLowerCase().includes(inputVal.toLowerCase())
+    ).slice(0, 5);
+
+    if (matches.length > 0 && dropdown) {
+      dropdown.innerHTML = matches.map(p => `
+        <div class="flex items-center gap-3 p-2 hover:bg-surface-hover rounded-lg cursor-pointer search-suggest-item" data-product-id="${p.id}">
+          <img src="${p.image}" class="w-8 h-8 rounded object-cover">
+          <div class="flex-1 min-w-0">
+            <p class="text-xs font-bold text-text-primary truncate">${p.title}</p>
+            <p class="text-[10px] text-text-secondary">${p.category}</p>
+          </div>
+          <span class="text-xs font-black text-text-primary">₹${p.price}</span>
+        </div>
+      `).join('');
+      dropdown.classList.remove('hidden');
+
+      dropdown.querySelectorAll('.search-suggest-item').forEach(item => {
+        item.onclick = () => {
+          const id = parseInt(item.getAttribute('data-product-id'));
+          openProductModal(id);
+          dropdown.classList.add('hidden');
+          if (searchInput) searchInput.value = '';
+          if (mobileSearchInput) mobileSearchInput.value = '';
+        };
+      });
+    } else {
+      if (dropdown) dropdown.classList.add('hidden');
+    }
+  };
+
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => handleSearch(e.target.value));
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        state.filters.searchQuery = searchInput.value;
+        if (dropdown) dropdown.classList.add('hidden');
+        window.location.hash = '#shop';
+        if (window.location.hash === '#shop') {
+          renderCatalog();
+        }
+      }
+    });
+  }
+
+  if (mobileSearchInput) {
+    mobileSearchInput.addEventListener('input', (e) => {
+      state.filters.searchQuery = e.target.value;
+    });
+    mobileSearchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        window.location.hash = '#shop';
+        if (window.location.hash === '#shop') {
+          renderCatalog();
+        }
+      }
+    });
+  }
+
+  document.addEventListener('click', (e) => {
+    if (dropdown && !dropdown.contains(e.target) && e.target !== searchInput) {
+      dropdown.classList.add('hidden');
+    }
   });
 }

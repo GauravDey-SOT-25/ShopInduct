@@ -50,7 +50,8 @@ export function login(
 
 export function register(
   email,
-  password
+  password,
+  extraDetails = {}
 ) {
 
   if (!email || !password) {
@@ -99,12 +100,18 @@ export function register(
   const newUser = {
     id: users.length + 1,
     email,
-    password
+    password,
+    ...extraDetails,
+    addresses: [],
+    orders: []
   };
 
   users.push(newUser);
 
   saveUsers();
+
+  currentUser = newUser;
+  localStorage.setItem("currentUser", JSON.stringify(newUser));
 
   return {
     success: true,

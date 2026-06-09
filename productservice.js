@@ -16,3 +16,8 @@ export async function getProducts(page = 1, limit = 10) {
     hasMore: end < products.length
   };
 }
+
+export async function getAllProducts() {
+  const response = await fetch(PRODUCT_URL);
+  return await response.json();
+}

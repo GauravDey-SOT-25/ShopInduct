@@ -1,51 +1,59 @@
 import { renderHeader } from './header.js';
 import { renderFooter } from './footer.js';
 import { renderHomepage } from './homepage.js';
-import { renderCategoryPage } from './categorypage.js';
+import { renderCategoryPage, renderCatalog } from './categorypage.js';
 import { renderCheckoutPage } from './checkoutpage.js';
-import { products } from './product.js';
+import { getAllProducts } from './productservice.js';
+import { currentUser, login as apiLogin, register as apiRegister, logout as apiLogout } from './auth.js';
+import { updateUserInfo } from './users.js';
+import { carts, addToCart as apiAddToCart, removeFromCart as apiRemoveFromCart, updateQuantity as apiUpdateQuantity, clearCart as apiClearCart } from './cart.js';
 
 // Central shared state object
 export const state = {
   theme: 'dark',
-
-  products,
-
+  products: [],
   cart: [],
   orders: [],
-
-  user: {
-    name: 'John Doe',
-    email: 'john@example.com',
-    phone: '+91 9876543210',
-    address: 'Sample Address',
-    pincode: '400001'
-  },
-
+  user: null,
   filters: {
     searchQuery: '',
     categories: [],
     maxPrice: 6000,
     minRating: 0,
     sortBy: 'featured'
-  }
+  },
+  promoApplied: null
 };
 
-
-
 // Initialize Application
-function init() {
-  
+async function init() {
   injectGlobalContainers();
-  
+
+  // Load remote products
+  try {
+    state.products = await getAllProducts();
+  } catch (err) {
+    console.error("Failed to load products:", err);
+  }
+
+  // Load theme preference
+  const savedTheme = localStorage.getItem('theme') || 'dark';
+  state.theme = savedTheme;
+  document.documentElement.setAttribute('data-theme', savedTheme);
+
+  // Sync session
+  syncSession();
+
   // Render layout shells
   renderHeader();
   renderFooter();
 
   // Setup Dynamic events
-  
   initGlobalModalClosers();
   initBackToTop();
+  initAuthEvents();
+  initCartDrawerActions();
+  initDragAndDrop();
 
   // SPA hash listener
   window.addEventListener('hashchange', handleRouting);
@@ -53,12 +61,29 @@ function init() {
   // Initial page trigger
   handleRouting();
 
-  // Sync initial cart list
+  // Initial render of cart drawer to sync UI with localStorage
+  renderCartDrawer();
 
-  
   showToast("Welcome to ShopInduct!", "info");
 }
 
+export function syncStateCart() {
+  const userId = currentUser ? currentUser.id : 'guest';
+  const rawCart = carts[userId] || [];
+  state.cart = rawCart.map(item => {
+    const p = state.products.find(prod => prod.id === item.productId);
+    if (p) {
+      return { ...p, quantity: item.quantity };
+    }
+    return null;
+  }).filter(Boolean);
+}
+
+export function syncSession() {
+  state.user = currentUser;
+  state.orders = currentUser ? (currentUser.orders || []) : [];
+  syncStateCart();
+}
 
 // --- DYNAMIC CONTAINERS INJECTION ---
 function injectGlobalContainers() {
@@ -121,7 +146,7 @@ function injectGlobalContainers() {
           <span id="cart-shipping-val">₹0</span>
         </div>
         <div class="flex justify-between text-sm text-text-secondary">
-          <span>Estimated GST Tax</span>
+          <span>Estimated GST Tax (18%)</span>
           <span id="cart-tax-val">₹0</span>
         </div>
         <div class="flex justify-between text-base font-extrabold text-text-primary border-t border-border-80 pt-3">
@@ -133,7 +158,6 @@ function injectGlobalContainers() {
         </button>
       </div>
     </aside>
-
 
     <!-- Product Specs Detailed Modal overlay -->
     <div class="modal-backdrop flex items-center justify-center p-4 bg-background-overlay/70 backdrop-blur-sm" id="product-modal-backdrop">
@@ -158,16 +182,14 @@ function injectGlobalContainers() {
               Premium studio grade sound outputs, ergonomic memory foams, long active noise cancellation controls.
             </p>
 
-           <!-- Interactive Variant Configurator -->
+            <!-- Interactive Variant Configurator -->
             <div class="flex flex-col gap-4 py-4 my-3 modal-configurator">
-              
               <!-- Stock status -->
               <div class="inline-flex items-center gap-2 text-xs font-semibold text-success config-stock-badge" id="modal-stock-badge">
                 <span class="w-2.5 h-2.5 rounded-full bg-success inline-block pulse-dot-anim"></span>
                 <span id="modal-stock-text">In Stock — Limited quantities available</span>
               </div>
             </div>
-
 
             <div class="flex items-center justify-between mt-4 modal-product-footer">
               <span class="text-xl font-extrabold text-text-primary modal-product-price">₹2999</span>
@@ -224,7 +246,7 @@ function injectGlobalContainers() {
       </div>
     </div>
 
-    <!-- User Profile & Orders Modal Overlay (FIX 6) -->
+    <!-- User Profile & Orders Modal Overlay -->
     <div class="modal-backdrop flex items-center justify-center p-4 bg-background-overlay/70 backdrop-blur-sm" id="profile-modal-backdrop">
       <div class="modal-content relative bg-surface border border-border rounded-2xl max-w-[500px] w-full shadow-premium-xl overflow-hidden transform scale-95 transition-all duration-300">
         <button class="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center bg-text-primary-10 text-text-primary hover:bg-text-primary-10 hover-bg-text-primary-20 rounded-full cursor-pointer transition duration-150 modal-close-btn" id="profile-modal-close-btn" title="Close profile modal" aria-label="Close profile modal">
@@ -265,9 +287,120 @@ function injectGlobalContainers() {
           <!-- Previous Orders Section -->
           <div class="flex flex-col gap-3">
             <h3 class="text-xs font-bold text-text-muted uppercase tracking-wider">Previous Orders</h3>
-            <div class="flex flex-col gap-3 max-h-[200px] overflow-y-auto pr-1" id="profile-orders-list">
+            <div class="flex flex-col gap-3 max-h-[160px] overflow-y-auto pr-1" id="profile-orders-list">
               <!-- Dynamically populated -->
             </div>
+          </div>
+
+          <button class="w-full btn-premium py-2.5 text-xs mt-2" id="profile-logout-btn">
+            Log Out
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Authentication Modal Overlay -->
+    <div class="modal-backdrop flex items-center justify-center p-4 bg-background-overlay/70 backdrop-blur-sm" id="auth-modal-backdrop">
+      <div class="modal-content relative bg-surface border border-border rounded-2xl max-w-[400px] w-full shadow-premium-xl overflow-hidden transform scale-95 transition-all duration-300">
+        <!-- Header with Toggle Tabs -->
+        <div class="flex border-b border-border-80">
+          <button id="tabSignIn" class="flex-1 py-4 text-xs font-black uppercase tracking-wider text-center border-b-2 border-primary text-text-primary transition-all cursor-pointer">
+            Sign In
+          </button>
+          <button id="tabSignUp" class="flex-1 py-4 text-xs font-black uppercase tracking-wider text-center border-b-2 border-transparent text-text-secondary hover:text-text-primary transition-all cursor-pointer">
+            Create Account
+          </button>
+        </div>
+
+        <!-- Content Area -->
+        <div class="p-8">
+          <!-- SIGN IN FORM -->
+          <form id="signInForm" class="space-y-6">
+            <div class="text-center mb-6">
+              <h3 class="text-xl font-extrabold text-text-primary tracking-tight">Welcome Back</h3>
+              <p class="text-text-secondary text-xs mt-1 font-medium">Access your personalized elite shopping dashboard</p>
+            </div>
+
+            <div class="space-y-4">
+              <div>
+                <label class="block text-[10px] font-bold text-text-secondary uppercase tracking-widest mb-2">Email Address *</label>
+                <input type="email" id="loginEmail" required class="input-field w-full px-4 py-3 bg-background-secondary border border-border-80 rounded-xl text-sm text-text-primary outline-none focus:bg-surface focus:border-primary focus-ring-primary-15 transition-all" placeholder="customer@gmail.com">
+              </div>
+
+              <div>
+                <label class="block text-[10px] font-bold text-text-secondary uppercase tracking-widest mb-2">Password *</label>
+                <input type="password" id="loginPassword" required class="input-field w-full px-4 py-3 bg-background-secondary border border-border-80 rounded-xl text-sm text-text-primary outline-none focus:bg-surface focus:border-primary focus-ring-primary-15 transition-all" placeholder="••••••••">
+              </div>
+            </div>
+
+            <div id="loginErrorMsg" class="text-danger text-xs font-bold text-center hidden mb-2"></div>
+
+            <button type="submit" class="w-full btn-premium py-3.5 text-xs">
+              Sign In
+            </button>
+          </form>
+
+          <!-- SIGN UP FORM -->
+          <form id="signUpForm" class="space-y-4 hidden">
+            <div class="text-center mb-4">
+              <h3 class="text-xl font-extrabold text-text-primary tracking-tight">Create Elite Profile</h3>
+              <p class="text-text-secondary text-xs mt-1 font-medium">Join us for premium privileges and deliveries</p>
+            </div>
+
+            <div class="space-y-3 max-h-[220px] overflow-y-auto pr-1">
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-[9px] font-bold text-text-secondary uppercase tracking-widest mb-1">First Name *</label>
+                  <input type="text" id="regFirstName" required class="input-field w-full px-3 py-2 bg-background-secondary border border-border-80 rounded-xl text-xs text-text-primary outline-none focus:bg-surface focus:border-primary transition-all" placeholder="John">
+                </div>
+                <div>
+                  <label class="block text-[9px] font-bold text-text-secondary uppercase tracking-widest mb-1">Last Name *</label>
+                  <input type="text" id="regLastName" required class="input-field w-full px-3 py-2 bg-background-secondary border border-border-80 rounded-xl text-xs text-text-primary outline-none focus:bg-surface focus:border-primary transition-all" placeholder="Doe">
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-[9px] font-bold text-text-secondary uppercase tracking-widest mb-1">Email Address *</label>
+                <input type="email" id="regEmail" required class="input-field w-full px-3 py-2 bg-background-secondary border border-border-80 rounded-xl text-xs text-text-primary outline-none focus:bg-surface focus:border-primary transition-all" placeholder="user@gmail.com">
+              </div>
+
+              <div>
+                <label class="block text-[9px] font-bold text-text-secondary uppercase tracking-widest mb-1">Mobile Number (10 Digits) *</label>
+                <input type="tel" id="regPhone" required pattern="^[0-9]{10}$" class="input-field w-full px-3 py-2 bg-background-secondary border border-border-80 rounded-xl text-xs text-text-primary outline-none focus:bg-surface focus:border-primary transition-all" placeholder="9876543210">
+              </div>
+
+              <div>
+                <label class="block text-[9px] font-bold text-text-secondary uppercase tracking-widest mb-1">Gender *</label>
+                <div class="flex gap-4 p-1">
+                  <label class="flex items-center gap-2 cursor-pointer text-xs font-semibold text-text-secondary">
+                    <input type="radio" name="regGender" value="Male" checked>
+                    Male
+                  </label>
+                  <label class="flex items-center gap-2 cursor-pointer text-xs font-semibold text-text-secondary">
+                    <input type="radio" name="regGender" value="Female">
+                    Female
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-[9px] font-bold text-text-secondary uppercase tracking-widest mb-1">Secret Password *</label>
+                <input type="password" id="regPassword" required minlength="6" class="input-field w-full px-3 py-2 bg-background-secondary border border-border-80 rounded-xl text-xs text-text-primary outline-none focus:bg-surface focus:border-primary transition-all" placeholder="Min 6 characters">
+              </div>
+            </div>
+
+            <div id="signUpErrorMsg" class="text-danger text-xs font-bold text-center hidden mb-2"></div>
+
+            <button type="submit" class="w-full btn-premium py-3.5 text-xs">
+              Create Account
+            </button>
+          </form>
+
+          <!-- Dismiss -->
+          <div class="mt-6 pt-4 border-t border-border-80 text-center">
+            <button id="btnCancelAuth" class="text-xs font-bold text-text-secondary hover:text-text-primary transition-colors cursor-pointer">
+              Dismiss
+            </button>
           </div>
         </div>
       </div>
@@ -289,8 +422,6 @@ function injectGlobalContainers() {
   }
 }
 
-
-
 export function toggleCartDrawer(show) {
   const drawer = document.getElementById('cart-drawer');
   const backdrop = document.getElementById('cart-drawer-backdrop');
@@ -310,6 +441,7 @@ function initGlobalModalClosers() {
   const productModal = document.getElementById('product-modal-backdrop');
   const successModal = document.getElementById('success-modal-backdrop');
   const profileModal = document.getElementById('profile-modal-backdrop');
+  const authModal = document.getElementById('auth-modal-backdrop');
 
   const setupClosers = (modal) => {
     if (!modal) return;
@@ -325,6 +457,7 @@ function initGlobalModalClosers() {
   setupClosers(productModal);
   setupClosers(successModal);
   setupClosers(profileModal);
+  setupClosers(authModal);
 
   const successContinueBtn = document.getElementById('success-continue-btn');
   if (successContinueBtn && successModal) {
@@ -339,6 +472,7 @@ function initGlobalModalClosers() {
       if (productModal) productModal.classList.remove('active');
       if (successModal) successModal.classList.remove('active');
       if (profileModal) profileModal.classList.remove('active');
+      if (authModal) authModal.classList.remove('active');
     }
   });
 }
@@ -354,63 +488,12 @@ export function openProductModal(productId) {
   modal.querySelector('.modal-product-img-wrapper img').alt = product.title;
   modal.querySelector('.modal-product-cat').textContent = product.category;
   modal.querySelector('.modal-product-title').textContent = product.title;
-  modal.querySelector('.modal-product-desc').textContent = product.description;
+  modal.querySelector('.modal-product-desc').textContent = product.description || "No description available.";
   modal.querySelector('.modal-product-price').textContent = `₹${product.price}`;
 
   const ratingRow = modal.querySelector('.modal-product-stars');
   if (ratingRow) {
     ratingRow.innerHTML = getStarsHtml(product.rating);
-  }
-
-  const colorLabel = modal.querySelector('#modal-selected-color');
-  if (colorLabel) colorLabel.textContent = "Space Grey";
-
-  const swatches = modal.querySelectorAll('.color-swatch');
-  swatches.forEach((swatch, idx) => {
-    // Reset classes to base Tailwind styling
-    swatch.className = "w-6 h-6 rounded-full border border-border shadow-sm cursor-pointer transition duration-150 color-swatch";
-    if (idx === 0) {
-      swatch.classList.add('active', 'scale-110', 'ring-2', 'ring-primary', 'ring-offset-2', 'ring-offset-background');
-      if (colorLabel) colorLabel.textContent = swatch.getAttribute('data-color');
-    } else {
-      swatch.classList.remove('active', 'scale-110', 'ring-2', 'ring-primary', 'ring-offset-2', 'ring-offset-background');
-    }
-
-    const newSwatch = swatch.cloneNode(true);
-    swatch.parentNode.replaceChild(newSwatch, swatch);
-
-    newSwatch.addEventListener('click', () => {
-      modal.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active', 'scale-110', 'ring-2', 'ring-primary', 'ring-offset-2', 'ring-offset-background'));
-      newSwatch.classList.add('active', 'scale-110', 'ring-2', 'ring-primary', 'ring-offset-2', 'ring-offset-background');
-      if (colorLabel) colorLabel.textContent = newSwatch.getAttribute('data-color');
-    });
-  });
-
-  const specLabel = modal.querySelector('#modal-spec-label');
-  const specContainer = modal.querySelector('#modal-spec-options');
-  if (specLabel && specContainer) {
-    let options = [];
-    if (product.category === 'Electronics') {
-      specLabel.textContent = "Storage Capacity:";
-      options = ["128GB", "256GB", "512GB"];
-    } else if (product.category === 'Fashion') {
-      specLabel.textContent = "Select Size:";
-      options = ["S", "M", "L", "XL"];
-    } else {
-      specLabel.textContent = "Package Options:";
-      options = ["Single Pack", "Pack of 2", "Eco Set"];
-    }
-
-    specContainer.innerHTML = options.map((opt, idx) => `
-      <button class="spec-chip ${idx === 0 ? 'active' : ''}" data-spec="${opt}">${opt}</button>
-    `).join('');
-
-    specContainer.querySelectorAll('.spec-chip').forEach(chip => {
-      chip.addEventListener('click', () => {
-        specContainer.querySelectorAll('.spec-chip').forEach(c => c.classList.remove('active'));
-        chip.classList.add('active');
-      });
-    });
   }
 
   const dot = modal.querySelector('.pulse-dot-anim');
@@ -451,57 +534,178 @@ export function openSuccessModal(orderData) {
   modal.querySelector('.success-total-val').textContent = `₹${orderData.total}`;
 
   modal.classList.add('active');
-  updatePromoUIStatus(null);
   showToast("Order Placed Successfully!", "success");
 }
 
-// --- DYNAMIC PROFILE MODAL ACTIONS ---
 export function openProfileModal() {
+  if (!currentUser) {
+    openAuthModal('profile');
+    return;
+  }
+
   const modal = document.getElementById('profile-modal-backdrop');
   if (!modal) return;
 
-  // Sync avatar JD based on name first letters
   const avatar = modal.querySelector('#profile-avatar');
   if (avatar) {
-    const nameParts = state.user.name.split(' ');
-    const initials = nameParts.map(p => p[0]).join('').substring(0, 2).toUpperCase();
-    avatar.textContent = initials;
+    const name = currentUser.firstName || currentUser.name || 'User';
+    avatar.textContent = name.charAt(0).toUpperCase();
   }
 
-  modal.querySelector('#profile-name-display').textContent = state.user.name;
-  modal.querySelector('#profile-email-display').textContent = state.user.email;
-  modal.querySelector('#profile-phone-display').textContent = state.user.phone;
-  modal.querySelector('#profile-address-display').textContent = state.user.address;
-  modal.querySelector('#profile-pincode-display').textContent = state.user.pincode;
+  modal.querySelector('#profile-name-display').textContent = `${currentUser.firstName || currentUser.name || ''} ${currentUser.lastName || ''}`;
+  modal.querySelector('#profile-email-display').textContent = currentUser.email;
+  modal.querySelector('#profile-phone-display').textContent = currentUser.phone || 'N/A';
+  modal.querySelector('#profile-pincode-display').textContent = currentUser.pincode || 'N/A';
+  
+  const address = currentUser.house ? `${currentUser.house}, ${currentUser.address}` : (currentUser.address || 'N/A');
+  modal.querySelector('#profile-address-display').textContent = address;
 
-  // Populates orders list dynamically from localStorage history
+  // Populates orders list dynamically
   const list = modal.querySelector('#profile-orders-list');
   if (list) {
-    if (state.orders.length === 0) {
+    const orders = currentUser.orders || [];
+    if (orders.length === 0) {
       list.innerHTML = `
         <div class="text-center py-6 text-text-muted text-xs bg-background-secondary rounded-xl border border-border border-dashed">
           No orders placed yet.
         </div>`;
     } else {
-      list.innerHTML = state.orders.map(order => `
+      list.innerHTML = orders.map(order => `
         <div class="bg-background-secondary border border-border rounded-xl p-3 flex justify-between items-center text-xs">
           <div>
             <div class="font-bold text-text-primary">${order.orderId}</div>
-            <div class="text-[10px] text-text-muted mt-0.5">${order.date} • ${order.itemsCount} ${order.itemsCount === 1 ? 'item' : 'items'}</div>
+            <div class="text-[10px] text-text-muted mt-0.5">${order.orderDate || order.date} • ${order.items ? order.items.length : 0} items</div>
           </div>
           <div class="text-right">
-            <div class="font-bold text-success">₹${order.total}</div>
-            <div class="text-[9px] bg-success-10 text-success font-semibold px-2 py-0.5 rounded-full inline-block mt-1">Dispatched</div>
+            <div class="font-bold text-success">${order.grandTotal || ('₹' + order.total)}</div>
+            <div class="text-[9px] bg-success-10 text-success font-semibold px-2 py-0.5 rounded-full inline-block mt-1">Confirmed</div>
           </div>
         </div>
       `).join('');
     }
   }
 
+  const logoutBtn = modal.querySelector('#profile-logout-btn');
+  if (logoutBtn) {
+    logoutBtn.onclick = () => {
+      modal.classList.remove('active');
+      apiLogout();
+      syncSession();
+      renderCartDrawer();
+      renderHeader();
+      window.location.hash = '#home';
+      showToast("Logged out successfully", "info");
+    };
+  }
+
   modal.classList.add('active');
 }
 
-// --- TOAST ALERTS SYSTEM (FIX 1) ---
+export function openAuthModal(redirect = null) {
+  authRedirectTarget = redirect;
+  const modal = document.getElementById('auth-modal-backdrop');
+  if (modal) {
+    modal.classList.add('active');
+  }
+}
+
+export function closeAuthModal() {
+  const modal = document.getElementById('auth-modal-backdrop');
+  if (modal) {
+    modal.classList.remove('active');
+  }
+  authRedirectTarget = null;
+}
+
+let authRedirectTarget = null;
+
+function initAuthEvents() {
+  const backdrop = document.getElementById('auth-modal-backdrop');
+  const tabSignIn = document.getElementById('tabSignIn');
+  const tabSignUp = document.getElementById('tabSignUp');
+  const signInForm = document.getElementById('signInForm');
+  const signUpForm = document.getElementById('signUpForm');
+  const btnCancelAuth = document.getElementById('btnCancelAuth');
+
+  if (tabSignIn && tabSignUp && signInForm && signUpForm) {
+    tabSignIn.addEventListener('click', () => {
+      tabSignIn.className = "flex-1 py-4 text-xs font-black uppercase tracking-wider text-center border-b-2 border-primary text-text-primary transition-all cursor-pointer";
+      tabSignUp.className = "flex-1 py-4 text-xs font-black uppercase tracking-wider text-center border-b-2 border-transparent text-text-secondary hover:text-text-primary transition-all cursor-pointer";
+      signInForm.classList.remove('hidden');
+      signUpForm.classList.add('hidden');
+    });
+
+    tabSignUp.addEventListener('click', () => {
+      tabSignUp.className = "flex-1 py-4 text-xs font-black uppercase tracking-wider text-center border-b-2 border-primary text-text-primary transition-all cursor-pointer";
+      tabSignIn.className = "flex-1 py-4 text-xs font-black uppercase tracking-wider text-center border-b-2 border-transparent text-text-secondary hover:text-text-primary transition-all cursor-pointer";
+      signUpForm.classList.remove('hidden');
+      signInForm.classList.add('hidden');
+    });
+  }
+
+  if (btnCancelAuth && backdrop) {
+    btnCancelAuth.addEventListener('click', () => {
+      backdrop.classList.remove('active');
+    });
+  }
+
+  if (signInForm) {
+    signInForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value.trim();
+      const pass = document.getElementById('loginPassword').value;
+      const errorMsg = document.getElementById('loginErrorMsg');
+
+      const res = apiLogin(email, pass);
+      if (res.success) {
+        syncSession();
+        renderHeader();
+        renderCartDrawer();
+        backdrop.classList.remove('active');
+        showToast("Welcome back!", "success");
+        if (authRedirectTarget === 'profile') {
+          openProfileModal();
+        } else if (authRedirectTarget === 'checkout') {
+          window.location.hash = '#checkout';
+        }
+      } else {
+        errorMsg.textContent = res.message;
+        errorMsg.classList.remove('hidden');
+      }
+    });
+  }
+
+  if (signUpForm) {
+    signUpForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const firstName = document.getElementById('regFirstName').value.trim();
+      const lastName = document.getElementById('regLastName').value.trim();
+      const email = document.getElementById('regEmail').value.trim();
+      const phone = document.getElementById('regPhone').value.trim();
+      const gender = document.querySelector('input[name="regGender"]:checked')?.value || 'Male';
+      const password = document.getElementById('regPassword').value;
+      const errorMsg = document.getElementById('signUpErrorMsg');
+
+      const res = apiRegister(email, password, { firstName, lastName, phone, gender });
+      if (res.success) {
+        syncSession();
+        renderHeader();
+        renderCartDrawer();
+        backdrop.classList.remove('active');
+        showToast("Account created successfully!", "success");
+        if (authRedirectTarget === 'profile') {
+          openProfileModal();
+        } else if (authRedirectTarget === 'checkout') {
+          window.location.hash = '#checkout';
+        }
+      } else {
+        errorMsg.textContent = res.message;
+        errorMsg.classList.remove('hidden');
+      }
+    });
+  }
+}
+
 export function showToast(message, type = 'success') {
   const container = document.getElementById('toast-container');
   if (!container) return;
@@ -513,7 +717,7 @@ export function showToast(message, type = 'success') {
     ? `<svg class="toast-icon-success text-success" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 20px; height: 20px;"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>`
     : type === 'error'
     ? `<svg class="toast-icon-error text-danger" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 20px; height: 20px;"><path stroke-linecap="round" stroke-linejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>`
-    : `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 20px; height: 20px; color: var(--accent-color);"><path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 1 1 1.063 1.06l-.041.02a.75.75 0 0 1-1.063-1.06Zm-9.62 1.62c-.22-.387-.218-.868.004-1.253a8.966 8.966 0 0 1 2.3-2.61c.427-.34.98-.52 1.547-.506A8.96 8.96 0 0 1 12 10.25a8.96 8.96 0 0 1 6.53-2.987c.567-.014 1.12.166 1.547.506a8.966 8.966 0 0 1 2.3 2.61c.222.385.224.866.004 1.253a8.966 8.966 0 0 1-2.3 2.61c-.427.34-.98.52-1.547.506A8.96 8.96 0 0 1 12 13.75a8.96 8.96 0 0 1-6.53 2.987c-.567.014-1.12-.166-1.547-.506a8.966 8.966 0 0 1-2.3-2.61Z" /></svg>`;
+    : `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 20px; height: 20px; color: var(--accent-color);"><path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 1 1 1.063 1.06l-.041.02a.75.75 0 0 1-1.063-1.06Zm-9.62 1.62c-.22-.387-.218-.868.004-1.253a8.966 8.966 0 0 1 2.3-2.61c.427-.34.98-.52(1.547-.506A8.96 8.96 0 0 1 12 10.25a8.96 8.96 0 0 1 6.53-2.987c.567-.014 1.12.166 1.547.506a8.966 8.966 0 0 1 2.3 2.61c.222.385.224.866.004 1.253a8.966 8.966 0 0 1-2.3 2.61c-.427.34-.98.52-1.547.506A8.96 8.96 0 0 1 12 13.75a8.96 8.96 0 0 1-6.53 2.987c-.567.014-1.12-.166-1.547-.506a8.966 8.966 0 0 1-2.3-2.61Z" /></svg>`;
 
   toast.innerHTML = `
     <div class="toast-icon">${icon}</div>
@@ -525,14 +729,12 @@ export function showToast(message, type = 'success') {
 
   container.appendChild(toast);
 
-  // Fade out smoothly and remove automatically after 2.5 seconds
   setTimeout(() => {
     toast.classList.add('removing');
     toast.addEventListener('animationend', () => toast.remove());
   }, 2500);
 }
 
-// --- BACK TO TOP ---
 function initBackToTop() {
   const btn = document.getElementById('back-to-top-btn');
   if (!btn) return;
@@ -550,15 +752,13 @@ function initBackToTop() {
   });
 }
 
-
-
-// --- PRODUCT CARDS GENERATION (FIX 4, FIX 7) ---
+// --- PRODUCT CARDS GENERATION ---
 export function createProductCardHtml(product, isSlider = false) {
   const cardHtml = `
-    <div class="product-card group bg-surface border border-border rounded-2xl p-4 flex flex-col relative transition-all duration-300 hover:-translate-y-1 hover:border-primary hover:shadow-premium-lg h-full cursor-grab active:cursor-grabbing w-full" data-product-id="${product.id}">
+    <div class="product-card group bg-surface border border-border rounded-2xl p-4 flex flex-col relative transition-all duration-300 hover:-translate-y-1 hover:border-primary hover:shadow-premium-lg h-full cursor-grab active:cursor-grabbing w-full" data-product-id="${product.id}" draggable="true">
       <!-- Image Container -->
       <div class="aspect-square bg-background-secondary rounded-xl relative overflow-hidden cursor-pointer mb-3" data-action="view-details">
-        <img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]" src="${product.image}" alt="${product.title}" loading="lazy">
+        <img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]" src="${product.image}" alt="${product.title}" loading="lazy" draggable="false">
         <!-- Price Badge on top-right of image -->
         <span class="absolute top-3 right-3 bg-constant-dark/60 text-constant-white text-xs font-bold px-2 py-1 rounded-lg shadow-premium-sm">₹${product.price}</span>
       </div>
@@ -571,7 +771,7 @@ export function createProductCardHtml(product, isSlider = false) {
         <!-- Product Title -->
         <h3 class="text-sm font-bold text-text-primary leading-snug cursor-pointer line-clamp-2 h-10 hover:text-primary transition-colors mb-1" data-action="view-details">${product.title}</h3>
         
-        <!-- Rating Row: 5 Stars + rating score + review count (Fix 7) -->
+        <!-- Rating Row -->
         <div class="flex items-center gap-1 text-xs text-text-secondary mb-3">
           <span class="inline-flex items-center gap-[2px] text-rating">
             ${getStarsHtml(product.rating)}
@@ -591,7 +791,7 @@ export function createProductCardHtml(product, isSlider = false) {
 
   if (isSlider) {
     return `
-      <div class="product-card-container min-w-[280px] shrink-0 snap-start">
+      <div class="product-card-container w-[280px] shrink-0 snap-start">
         ${cardHtml}
       </div>
     `;
@@ -624,9 +824,241 @@ export function bindCardInteractions(containerElement) {
     });
   });
 
+  // Bind Add to Cart directly on cards
+  containerElement.querySelectorAll('.add-to-cart-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const card = e.target.closest('.product-card');
+      const id = parseInt(card.getAttribute('data-product-id'));
+      addToCart(id);
+    });
+  });
 }
 
-// --- SPA ROUTER (FIX 5) ---
+// --- DOCK DRAG & DROP FOR CART DRAWERS ---
+function initDragAndDrop() {
+  const zone = document.getElementById('cart-dropzone-indicator');
+  const cartBtn = document.getElementById('nav-cart-btn');
+
+  document.body.addEventListener('dragstart', (e) => {
+    const card = e.target.closest('.product-card');
+    if (card) {
+      const id = card.getAttribute('data-product-id');
+      e.dataTransfer.setData('text/plain', id);
+      e.dataTransfer.effectAllowed = 'copy';
+      
+      // Highlight targets
+      if (zone) zone.classList.add('dragover');
+      toggleCartDrawer(true);
+    }
+  });
+
+  document.body.addEventListener('dragend', () => {
+    if (zone) zone.classList.remove('dragover');
+  });
+
+  if (zone) {
+    zone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+    });
+
+    zone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const id = parseInt(e.dataTransfer.getData('text/plain'));
+      if (!isNaN(id)) {
+        addToCart(id);
+      }
+    });
+  }
+
+  if (cartBtn) {
+    cartBtn.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+    });
+
+    cartBtn.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const id = parseInt(e.dataTransfer.getData('text/plain'));
+      if (!isNaN(id)) {
+        addToCart(id);
+        toggleCartDrawer(true);
+      }
+    });
+  }
+}
+
+// --- CART DRAWER RENDERING ---
+export function renderCartDrawer() {
+  const container = document.getElementById('cart-items-container');
+  const emptyState = document.getElementById('cart-empty-state');
+  const footer = document.getElementById('cart-drawer-footer');
+  const badge = document.getElementById('nav-cart-badge-count');
+
+  if (!container) return;
+
+  const totalItems = state.cart.reduce((sum, item) => sum + item.quantity, 0);
+  const subtotal = state.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+  if (badge) {
+    if (totalItems > 0) {
+      badge.textContent = totalItems;
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
+  }
+
+  if (state.cart.length === 0) {
+    container.innerHTML = '';
+    emptyState.classList.remove('hidden');
+    footer.classList.add('hidden');
+    return;
+  }
+
+  emptyState.classList.add('hidden');
+  footer.classList.remove('hidden');
+
+  container.innerHTML = state.cart.map(item => `
+    <div class="flex gap-4 p-4 bg-background-secondary border border-border-80 rounded-xl relative hover:border-primary transition-all duration-300">
+      <img src="${item.image}" alt="${item.title}" class="w-16 h-16 rounded-lg object-cover bg-surface border border-border">
+      <div class="flex-1 min-w-0 flex flex-col">
+        <span class="text-[9px] font-bold text-text-muted uppercase tracking-widest">${item.category}</span>
+        <h5 class="text-xs font-bold text-text-primary mt-0.5 leading-tight line-clamp-1">${item.title}</h5>
+        <div class="flex items-center justify-between mt-auto">
+          <div class="flex items-center gap-2 bg-surface border border-border rounded-lg p-0.5">
+            <button class="cart-qty-btn text-text-secondary hover:text-text-primary transition px-1.5 py-0.5 rounded cursor-pointer" data-product-id="${item.id}" data-delta="-1">-</button>
+            <span class="text-xs font-bold text-text-primary w-4 text-center">${item.quantity}</span>
+            <button class="cart-qty-btn text-text-secondary hover:text-text-primary transition px-1.5 py-0.5 rounded cursor-pointer" data-product-id="${item.id}" data-delta="1">+</button>
+          </div>
+          <span class="text-xs font-black text-text-primary">₹${item.price * item.quantity}</span>
+        </div>
+      </div>
+      <button class="cart-remove-btn absolute top-3 right-3 text-text-muted hover:text-danger transition cursor-pointer" data-product-id="${item.id}" title="Remove item">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+      </button>
+    </div>
+  `).join('');
+
+  // Calculations
+  let discount = 0;
+  if (state.promoApplied === 'INDUCT10') {
+    discount = Math.round(subtotal * 0.10);
+  }
+
+  const shipping = subtotal >= 1999 ? 0 : 150;
+  const tax = Math.round((subtotal - discount) * 0.18);
+  const total = subtotal - discount + shipping + tax;
+
+  document.getElementById('cart-subtotal-val').textContent = `₹${subtotal}`;
+  
+  const discountRow = document.getElementById('cart-discount-row');
+  if (discount > 0) {
+    discountRow.classList.remove('hidden');
+    document.getElementById('cart-discount-val').textContent = `-₹${discount}`;
+  } else {
+    discountRow.classList.add('hidden');
+  }
+
+  document.getElementById('cart-shipping-val').textContent = shipping === 0 ? 'FREE' : `₹${shipping}`;
+  document.getElementById('cart-tax-val').textContent = `₹${tax}`;
+  document.getElementById('cart-total-val').textContent = `₹${total}`;
+
+  // Qty and Remove listeners
+  container.querySelectorAll('.cart-qty-btn').forEach(btn => {
+    btn.onclick = () => {
+      const id = parseInt(btn.getAttribute('data-product-id'));
+      const delta = parseInt(btn.getAttribute('data-delta'));
+      updateQuantity(id, delta);
+    };
+  });
+
+  container.querySelectorAll('.cart-remove-btn').forEach(btn => {
+    btn.onclick = () => {
+      const id = parseInt(btn.getAttribute('data-product-id'));
+      removeFromCart(id);
+    };
+  });
+}
+
+function initCartDrawerActions() {
+  // Promo code
+  const promoBtn = document.getElementById('cart-promo-apply-btn');
+  const promoInput = document.getElementById('cart-promo-input');
+  const promoStatus = document.getElementById('cart-promo-status');
+
+  if (promoBtn && promoInput) {
+    promoBtn.onclick = () => {
+      const val = promoInput.value.trim().toUpperCase();
+      if (val === 'INDUCT10') {
+        state.promoApplied = 'INDUCT10';
+        promoStatus.textContent = 'Promo code INDUCT10 applied (10% Off!)';
+        promoStatus.className = 'text-[11px] font-semibold mt-1 text-success';
+        promoStatus.classList.remove('hidden');
+        renderCartDrawer();
+      } else {
+        promoStatus.textContent = 'Invalid promo code';
+        promoStatus.className = 'text-[11px] font-semibold mt-1 text-danger';
+        promoStatus.classList.remove('hidden');
+      }
+    };
+  }
+
+  // Shop button inside empty drawer
+  const shopBtn = document.getElementById('cart-drawer-shop-btn');
+  if (shopBtn) {
+    shopBtn.onclick = () => {
+      toggleCartDrawer(false);
+      window.location.hash = '#shop';
+    };
+  }
+
+  // Checkout redirect button
+  const chkBtn = document.getElementById('cart-drawer-checkout-btn');
+  if (chkBtn) {
+    chkBtn.onclick = () => {
+      toggleCartDrawer(false);
+      if (!currentUser) {
+        openAuthModal('checkout');
+      } else {
+        window.location.hash = '#checkout';
+      }
+    };
+  }
+}
+
+export function addToCart(productId) {
+  const userId = currentUser ? currentUser.id : 'guest';
+  apiAddToCart(userId, productId);
+  syncStateCart();
+  renderCartDrawer();
+  showToast("Added to Cart", "success");
+}
+
+export function removeFromCart(productId) {
+  const userId = currentUser ? currentUser.id : 'guest';
+  apiRemoveFromCart(userId, productId);
+  syncStateCart();
+  renderCartDrawer();
+  showToast("Removed from Cart", "info");
+}
+
+export function updateQuantity(productId, delta) {
+  const userId = currentUser ? currentUser.id : 'guest';
+  apiUpdateQuantity(userId, productId, delta);
+  syncStateCart();
+  renderCartDrawer();
+}
+
+export function clearCart() {
+  const userId = currentUser ? currentUser.id : 'guest';
+  apiClearCart(userId);
+  syncStateCart();
+  renderCartDrawer();
+}
+
+// --- SPA ROUTER ---
 const routes = {
   '#home': () => renderHomepage(),
   '#shop': () => renderCategoryPage(),
@@ -649,8 +1081,7 @@ export function clearAllFilters() {
 function handleRouting() {
   const hash = window.location.hash || '#home';
 
-  // Dynamic Sub-Navbar Visibility Rules (FIX 5)
-  // Visible ONLY when currently inside the shop catalog page (#shop)
+  // Dynamic Sub-Navbar Visibility Rules
   const subNavbar = document.querySelector('.sub-navbar');
   if (subNavbar) {
     if (hash === '#shop') {
@@ -673,7 +1104,7 @@ function handleRouting() {
     }
   });
   
- const subNavbarLinks = document.querySelectorAll('.sub-nav-link');
+  const subNavbarLinks = document.querySelectorAll('.sub-nav-link');
   const activeCategory = state.filters.categories.length > 0 ? state.filters.categories[0] : 'all';
   subNavbarLinks.forEach(link => {
     const linkCat = link.getAttribute('data-category');
