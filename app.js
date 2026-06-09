@@ -1,0 +1,709 @@
+import { renderHeader } from './header.js';
+import { renderFooter } from './footer.js';
+import { renderHomepage } from './homepage.js';
+import { renderCategoryPage } from './categorypage.js';
+import { renderCheckoutPage } from './checkoutpage.js';
+import { products } from './product.js';
+
+// Central shared state object
+export const state = {
+  theme: 'dark',
+
+  products,
+
+  cart: [],
+  orders: [],
+
+  user: {
+    name: 'John Doe',
+    email: 'john@example.com',
+    phone: '+91 9876543210',
+    address: 'Sample Address',
+    pincode: '400001'
+  },
+
+  filters: {
+    searchQuery: '',
+    categories: [],
+    maxPrice: 6000,
+    minRating: 0,
+    sortBy: 'featured'
+  }
+};
+
+
+
+// Initialize Application
+function init() {
+  
+  injectGlobalContainers();
+  
+  // Render layout shells
+  renderHeader();
+  renderFooter();
+
+  // Setup Dynamic events
+  
+  initGlobalModalClosers();
+  initBackToTop();
+
+  // SPA hash listener
+  window.addEventListener('hashchange', handleRouting);
+  
+  // Initial page trigger
+  handleRouting();
+
+  // Sync initial cart list
+
+  
+  showToast("Welcome to ShopInduct!", "info");
+}
+
+
+// --- DYNAMIC CONTAINERS INJECTION ---
+function injectGlobalContainers() {
+  if (document.getElementById('cart-drawer')) return;
+
+  const html = `
+    <!-- Sliding Sticky Cart Drawer -->
+    <div class="cart-drawer-backdrop" id="cart-drawer-backdrop"></div>
+    <aside class="cart-drawer flex flex-col bg-surface border-l border-border-80 transition-all duration-300" id="cart-drawer">
+      <div class="cart-drawer-header px-6 py-4 border-b border-border-80 flex items-center justify-between gap-3">
+        <h3 class="cart-drawer-title text-base font-bold text-text-primary whitespace-nowrap">Shopping Cart</h3>
+        
+        <!-- Drag & Drop Zone placed horizontally next to title -->
+        <div class="cart-dropzone flex items-center gap-2 px-3 py-1.5 border border-dashed border-border-80 rounded-lg bg-background-secondary text-text-secondary cursor-default flex-1 max-w-[190px] justify-center transition-all duration-150" id="cart-dropzone-indicator">
+          <svg class="text-text-muted w-3.5 h-3.5 animate-pulse shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 3.75H6.912a2.25 2.25 0 0 0-2.15 1.588L2.35 13.177a2.25 2.25 0 0 0-.1.661V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18v-4.162c0-.224-.034-.447-.1-.661L19.24 5.338a2.25 2.25 0 0 0-2.15-1.588H15M2.25 13.5h3.86a2.25 2.25 0 0 1 2.008 1.24l.885 1.77a2.25 2.25 0 0 0 2.007 1.24h1.98a2.25 2.25 0 0 0 2.007-1.24l.885-1.77a2.25 2.25 0 0 1 2.007-1.24h3.86m-18 0h18" /></svg>
+          <span class="cart-dropzone-text text-[10px] font-semibold whitespace-nowrap">Drag here!</span>
+        </div>
+ 
+        <button class="w-8 h-8 flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface-hover rounded-lg cursor-pointer transition duration-150 shrink-0" id="cart-drawer-close-btn" title="Close Shopping Cart" aria-label="Close shopping cart drawer">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+        </button>
+      </div>
+ 
+      <!-- Cart Scrollable List -->
+      <div class="cart-items-container flex-1 overflow-y-auto p-6 flex flex-col gap-4" id="cart-items-container">
+        <!-- Dynamic list rows -->
+      </div>
+ 
+      <!-- Empty state inside drawer -->
+      <div class="empty-state border-none shadow-none p-10 px-6 m-auto flex flex-col items-center justify-center text-center gap-4 hidden" id="cart-empty-state">
+        <div class="text-text-muted bg-background-secondary p-4 rounded-full flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" /></svg>
+        </div>
+        <h3 class="text-base font-bold text-text-primary">Your Cart is empty</h3>
+        <p class="text-xs text-text-secondary leading-relaxed">Drag items or click the '+' button in catalog to add some premium gadgets!</p>
+        <button class="inline-flex items-center justify-center px-4 py-2 text-xs font-semibold rounded-xl text-text-inverse bg-primary hover:bg-primary-hover transition duration-150 cursor-pointer" id="cart-drawer-shop-btn">Start Shopping</button>
+      </div>
+ 
+      <!-- Sticky footer checkout details inside drawer -->
+      <div class="cart-drawer-footer p-6 border-t border-border-80 bg-background-secondary flex flex-col gap-4 transition-colors duration-250" id="cart-drawer-footer">
+        <!-- Promo Coupon Panel -->
+        <div class="border-b border-border-80 pb-3 mb-3">
+          <div class="flex gap-2">
+            <input type="text" class="input-field w-full px-4 py-2 bg-surface border border-border-80 rounded-xl text-xs text-text-primary uppercase outline-none focus:bg-surface-elevated focus:border-primary focus-ring-primary-15 transition-all" id="cart-promo-input" placeholder="Promo Code" aria-label="Promo code input field">
+            <button class="inline-flex items-center justify-center px-4 py-2 text-xs font-semibold rounded-xl text-text-inverse bg-primary hover:bg-primary-hover transition duration-150 cursor-pointer" id="cart-promo-apply-btn">Apply</button>
+          </div>
+          <div id="cart-promo-status" class="text-[11px] font-semibold mt-1 hidden"></div>
+        </div>
+ 
+        <div class="flex justify-between text-sm text-text-secondary">
+          <span>Subtotal</span>
+          <span id="cart-subtotal-val">₹0</span>
+        </div>
+        <div class="flex justify-between text-sm text-success font-semibold hidden" id="cart-discount-row">
+          <span>Discount (Promo)</span>
+          <span id="cart-discount-val">-₹0</span>
+        </div>
+        <div class="flex justify-between text-sm text-text-secondary">
+          <span>Shipping Fees</span>
+          <span id="cart-shipping-val">₹0</span>
+        </div>
+        <div class="flex justify-between text-sm text-text-secondary">
+          <span>Estimated GST Tax</span>
+          <span id="cart-tax-val">₹0</span>
+        </div>
+        <div class="flex justify-between text-base font-extrabold text-text-primary border-t border-border-80 pt-3">
+          <span>Estimated Total</span>
+          <span id="cart-total-val" class="text-primary">₹0</span>
+        </div>
+        <button class="w-full btn-premium px-6 py-3 text-sm mt-2 cursor-pointer" id="cart-drawer-checkout-btn">
+          Proceed To Checkout
+        </button>
+      </div>
+    </aside>
+
+
+    <!-- Product Specs Detailed Modal overlay -->
+    <div class="modal-backdrop flex items-center justify-center p-4 bg-background-overlay/70 backdrop-blur-sm" id="product-modal-backdrop">
+      <div class="modal-content relative bg-surface border border-border rounded-2xl max-w-[650px] w-full shadow-premium-xl overflow-hidden transform scale-95 transition-all duration-300">
+        <button class="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center bg-text-primary-10 text-text-primary hover:bg-text-primary-10 hover-bg-text-primary-20 rounded-full cursor-pointer transition duration-150 modal-close-btn" title="Close detailed specs modal" aria-label="Close detailed specs modal">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+        </button>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-[1fr_1.2fr] modal-product-layout">
+          <!-- Left photo showcase -->
+          <div class="aspect-square bg-background-secondary overflow-hidden modal-product-img-wrapper">
+            <img class="w-full h-full object-cover" src="" alt="Product detailed display photo">
+          </div>
+          <!-- Right tech specs and add action -->
+          <div class="p-8 sm:p-6 flex flex-col gap-4 justify-center modal-product-info">
+            <span class="text-xs font-bold text-text-muted uppercase tracking-widest modal-product-cat">CATEGORY</span>
+            <h2 class="text-xl font-extrabold text-text-primary leading-snug modal-product-title">Wireless Headphones</h2>
+            <div class="stars-row inline-flex items-center text-rating gap-[2px] text-sm modal-product-stars">
+              <!-- Stars dynamic render -->
+            </div>
+            <p class="text-sm text-text-secondary leading-relaxed modal-product-desc">
+              Premium studio grade sound outputs, ergonomic memory foams, long active noise cancellation controls.
+            </p>
+
+           <!-- Interactive Variant Configurator -->
+            <div class="flex flex-col gap-4 py-4 my-3 modal-configurator">
+              
+              <!-- Stock status -->
+              <div class="inline-flex items-center gap-2 text-xs font-semibold text-success config-stock-badge" id="modal-stock-badge">
+                <span class="w-2.5 h-2.5 rounded-full bg-success inline-block pulse-dot-anim"></span>
+                <span id="modal-stock-text">In Stock — Limited quantities available</span>
+              </div>
+            </div>
+
+
+            <div class="flex items-center justify-between mt-4 modal-product-footer">
+              <span class="text-xl font-extrabold text-text-primary modal-product-price">₹2999</span>
+              <button class="btn-premium px-6 py-3 text-sm modal-add-to-cart-btn cursor-pointer">Add to Cart</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Success Modal overlay -->
+    <div class="modal-backdrop flex items-center justify-center p-4 bg-background-overlay/70 backdrop-blur-sm" id="success-modal-backdrop">
+      <div class="modal-content relative bg-surface border border-border rounded-2xl max-w-[500px] w-full shadow-premium-xl overflow-hidden transform scale-95 transition-all duration-300">
+        <!-- Hidden close btn to allow Escape and click out only -->
+        <button class="modal-close-btn hidden" title="Close success invoice modal" aria-label="Close success invoice modal"></button>
+        
+        <div class="p-8 flex flex-col items-center text-center gap-5 modal-success-layout">
+          <div class="bg-success-10 text-success w-[72px] h-[72px] rounded-full flex items-center justify-center text-3xl shadow-success-glow success-check-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor" class="w-8 h-8"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
+          </div>
+          <h2 class="text-2xl font-extrabold text-text-primary success-title">Order Confirmed!</h2>
+          <p class="text-sm text-text-secondary leading-relaxed max-w-[400px] success-message">
+            Thank you for choosing ShopInduct. We have received your payment. Your premium items will be dispatched within 24 hours.
+          </p>
+
+          <!-- Mock invoice slip receipt -->
+          <div class="w-full bg-background-secondary border border-border rounded-xl p-4 flex flex-col gap-2 text-left receipt-summary">
+            <div class="flex justify-between text-xs text-text-secondary receipt-row">
+              <span>Order Reference</span>
+              <span class="font-bold text-text-primary success-order-id">ORD-189382</span>
+            </div>
+            <div class="flex justify-between text-xs text-text-secondary receipt-row">
+              <span>Invoice Date</span>
+              <span class="success-date">27 May 2026</span>
+            </div>
+            <div class="flex justify-between text-xs text-text-secondary receipt-row">
+              <span>Delivering To</span>
+              <span class="font-medium text-text-primary success-name">John Doe</span>
+            </div>
+            <div class="flex justify-between text-xs text-text-secondary receipt-row">
+              <span>Shipping Address</span>
+              <span class="success-address text-right max-w-[60%] break-all">Flat 204, Royal Palms, Mumbai - 400001</span>
+            </div>
+            <div class="flex justify-between text-sm font-bold text-text-primary mt-2 border-t border-border pt-2 receipt-row-bold">
+              <span>Amount Paid</span>
+              <span class="text-success success-total-val">₹0</span>
+            </div>
+          </div>
+
+          <button class="w-full inline-flex items-center justify-center px-6 py-3 text-sm font-semibold rounded-xl text-text-inverse bg-primary hover:bg-primary-hover cursor-pointer transition duration-150" id="success-continue-btn">
+            Continue Shopping
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- User Profile & Orders Modal Overlay (FIX 6) -->
+    <div class="modal-backdrop flex items-center justify-center p-4 bg-background-overlay/70 backdrop-blur-sm" id="profile-modal-backdrop">
+      <div class="modal-content relative bg-surface border border-border rounded-2xl max-w-[500px] w-full shadow-premium-xl overflow-hidden transform scale-95 transition-all duration-300">
+        <button class="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center bg-text-primary-10 text-text-primary hover:bg-text-primary-10 hover-bg-text-primary-20 rounded-full cursor-pointer transition duration-150 modal-close-btn" id="profile-modal-close-btn" title="Close profile modal" aria-label="Close profile modal">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>
+        </button>
+        
+        <div class="p-8 flex flex-col gap-6">
+          <!-- Profile Header -->
+          <div class="flex items-center gap-4 border-b border-border pb-4">
+            <div class="w-14 h-14 rounded-full bg-primary-10 text-primary flex items-center justify-center text-xl font-bold border border-primary/20" id="profile-avatar">
+              JD
+            </div>
+            <div>
+              <h2 class="text-lg font-extrabold text-text-primary" id="profile-name-display">John Doe</h2>
+              <p class="text-xs text-text-secondary" id="profile-email-display">john.doe@example.com</p>
+            </div>
+          </div>
+
+          <!-- Account Info Section -->
+          <div class="flex flex-col gap-3">
+            <h3 class="text-xs font-bold text-text-muted uppercase tracking-wider">Account Details</h3>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <div class="bg-background-secondary p-2.5 rounded-lg border border-border">
+                <span class="text-text-muted block mb-0.5">Phone</span>
+                <span class="font-medium text-text-primary" id="profile-phone-display">+91 9876543210</span>
+              </div>
+              <div class="bg-background-secondary p-2.5 rounded-lg border border-border">
+                <span class="text-text-muted block mb-0.5">Default PIN</span>
+                <span class="font-medium text-text-primary" id="profile-pincode-display">400001</span>
+              </div>
+              <div class="bg-background-secondary p-2.5 rounded-lg border border-border col-span-2">
+                <span class="text-text-muted block mb-0.5">Shipping Address</span>
+                <span class="font-medium text-text-primary" id="profile-address-display">Flat 204, Royal Palms, Mumbai - 400001</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Previous Orders Section -->
+          <div class="flex flex-col gap-3">
+            <h3 class="text-xs font-bold text-text-muted uppercase tracking-wider">Previous Orders</h3>
+            <div class="flex flex-col gap-3 max-h-[200px] overflow-y-auto pr-1" id="profile-orders-list">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Floating Utilities (Back to Top) -->
+    <button class="back-to-top fixed bottom-6 left-6 z-[90] bg-surface border border-border shadow-premium-md rounded-full w-9 h-9 flex items-center justify-center text-text-secondary hover:text-text-primary transition duration-150 cursor-pointer" id="back-to-top-btn" title="Back to top of page" aria-label="Scroll back to top of the page">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-[18px] h-[18px]"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 10.5 12 3m0 0 7.5 7.5M12 3v18" /></svg>
+    </button>
+
+    <!-- Toast Notification Containers -->
+    <div class="fixed bottom-6 right-6 z-[300] flex flex-col gap-3 pointer-events-none max-w-[380px] w-full px-4 sm:px-0" id="toast-container"></div>
+  `;
+
+  const container = document.createElement('div');
+  container.innerHTML = html;
+  while (container.firstChild) {
+    document.body.appendChild(container.firstChild);
+  }
+}
+
+
+
+export function toggleCartDrawer(show) {
+  const drawer = document.getElementById('cart-drawer');
+  const backdrop = document.getElementById('cart-drawer-backdrop');
+  if (!drawer || !backdrop) return;
+
+  if (show) {
+    drawer.classList.add('active');
+    backdrop.classList.add('active');
+  } else {
+    drawer.classList.remove('active');
+    backdrop.classList.remove('active');
+  }
+}
+
+// --- MODALS CLOSERS ---
+function initGlobalModalClosers() {
+  const productModal = document.getElementById('product-modal-backdrop');
+  const successModal = document.getElementById('success-modal-backdrop');
+  const profileModal = document.getElementById('profile-modal-backdrop');
+
+  const setupClosers = (modal) => {
+    if (!modal) return;
+    const closeBtn = modal.querySelector('.modal-close-btn');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => modal.classList.remove('active'));
+    }
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) modal.classList.remove('active');
+    });
+  };
+
+  setupClosers(productModal);
+  setupClosers(successModal);
+  setupClosers(profileModal);
+
+  const successContinueBtn = document.getElementById('success-continue-btn');
+  if (successContinueBtn && successModal) {
+    successContinueBtn.addEventListener('click', () => {
+      successModal.classList.remove('active');
+      window.location.hash = '#home';
+    });
+  }
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (productModal) productModal.classList.remove('active');
+      if (successModal) successModal.classList.remove('active');
+      if (profileModal) profileModal.classList.remove('active');
+    }
+  });
+}
+
+export function openProductModal(productId) {
+  const product = state.products.find(p => p.id === productId);
+  if (!product) return;
+
+  const modal = document.getElementById('product-modal-backdrop');
+  if (!modal) return;
+
+  modal.querySelector('.modal-product-img-wrapper img').src = product.image;
+  modal.querySelector('.modal-product-img-wrapper img').alt = product.title;
+  modal.querySelector('.modal-product-cat').textContent = product.category;
+  modal.querySelector('.modal-product-title').textContent = product.title;
+  modal.querySelector('.modal-product-desc').textContent = product.description;
+  modal.querySelector('.modal-product-price').textContent = `₹${product.price}`;
+
+  const ratingRow = modal.querySelector('.modal-product-stars');
+  if (ratingRow) {
+    ratingRow.innerHTML = getStarsHtml(product.rating);
+  }
+
+  const colorLabel = modal.querySelector('#modal-selected-color');
+  if (colorLabel) colorLabel.textContent = "Space Grey";
+
+  const swatches = modal.querySelectorAll('.color-swatch');
+  swatches.forEach((swatch, idx) => {
+    // Reset classes to base Tailwind styling
+    swatch.className = "w-6 h-6 rounded-full border border-border shadow-sm cursor-pointer transition duration-150 color-swatch";
+    if (idx === 0) {
+      swatch.classList.add('active', 'scale-110', 'ring-2', 'ring-primary', 'ring-offset-2', 'ring-offset-background');
+      if (colorLabel) colorLabel.textContent = swatch.getAttribute('data-color');
+    } else {
+      swatch.classList.remove('active', 'scale-110', 'ring-2', 'ring-primary', 'ring-offset-2', 'ring-offset-background');
+    }
+
+    const newSwatch = swatch.cloneNode(true);
+    swatch.parentNode.replaceChild(newSwatch, swatch);
+
+    newSwatch.addEventListener('click', () => {
+      modal.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active', 'scale-110', 'ring-2', 'ring-primary', 'ring-offset-2', 'ring-offset-background'));
+      newSwatch.classList.add('active', 'scale-110', 'ring-2', 'ring-primary', 'ring-offset-2', 'ring-offset-background');
+      if (colorLabel) colorLabel.textContent = newSwatch.getAttribute('data-color');
+    });
+  });
+
+  const specLabel = modal.querySelector('#modal-spec-label');
+  const specContainer = modal.querySelector('#modal-spec-options');
+  if (specLabel && specContainer) {
+    let options = [];
+    if (product.category === 'Electronics') {
+      specLabel.textContent = "Storage Capacity:";
+      options = ["128GB", "256GB", "512GB"];
+    } else if (product.category === 'Fashion') {
+      specLabel.textContent = "Select Size:";
+      options = ["S", "M", "L", "XL"];
+    } else {
+      specLabel.textContent = "Package Options:";
+      options = ["Single Pack", "Pack of 2", "Eco Set"];
+    }
+
+    specContainer.innerHTML = options.map((opt, idx) => `
+      <button class="spec-chip ${idx === 0 ? 'active' : ''}" data-spec="${opt}">${opt}</button>
+    `).join('');
+
+    specContainer.querySelectorAll('.spec-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        specContainer.querySelectorAll('.spec-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+      });
+    });
+  }
+
+  const dot = modal.querySelector('.pulse-dot-anim');
+  const stockText = modal.querySelector('#modal-stock-text');
+  if (dot && stockText) {
+    if (product.id % 3 === 0) {
+      dot.style.backgroundColor = 'var(--accent-color)';
+      stockText.textContent = 'Low Stock — Only 2 units left in store!';
+      stockText.style.color = 'var(--accent-color)';
+    } else {
+      dot.style.backgroundColor = 'var(--success-color)';
+      stockText.textContent = 'In Stock — Available for immediate dispatch';
+      stockText.style.color = 'var(--success-color)';
+    }
+  }
+
+  const cta = modal.querySelector('.modal-add-to-cart-btn');
+  if (cta) {
+    const newCta = cta.cloneNode(true);
+    cta.parentNode.replaceChild(newCta, cta);
+    newCta.addEventListener('click', () => {
+      addToCart(product.id);
+      modal.classList.remove('active');
+    });
+  }
+
+  modal.classList.add('active');
+}
+
+export function openSuccessModal(orderData) {
+  const modal = document.getElementById('success-modal-backdrop');
+  if (!modal) return;
+
+  modal.querySelector('.success-order-id').textContent = orderData.orderId;
+  modal.querySelector('.success-date').textContent = orderData.date;
+  modal.querySelector('.success-name').textContent = orderData.name;
+  modal.querySelector('.success-address').textContent = orderData.address;
+  modal.querySelector('.success-total-val').textContent = `₹${orderData.total}`;
+
+  modal.classList.add('active');
+  updatePromoUIStatus(null);
+  showToast("Order Placed Successfully!", "success");
+}
+
+// --- DYNAMIC PROFILE MODAL ACTIONS ---
+export function openProfileModal() {
+  const modal = document.getElementById('profile-modal-backdrop');
+  if (!modal) return;
+
+  // Sync avatar JD based on name first letters
+  const avatar = modal.querySelector('#profile-avatar');
+  if (avatar) {
+    const nameParts = state.user.name.split(' ');
+    const initials = nameParts.map(p => p[0]).join('').substring(0, 2).toUpperCase();
+    avatar.textContent = initials;
+  }
+
+  modal.querySelector('#profile-name-display').textContent = state.user.name;
+  modal.querySelector('#profile-email-display').textContent = state.user.email;
+  modal.querySelector('#profile-phone-display').textContent = state.user.phone;
+  modal.querySelector('#profile-address-display').textContent = state.user.address;
+  modal.querySelector('#profile-pincode-display').textContent = state.user.pincode;
+
+  // Populates orders list dynamically from localStorage history
+  const list = modal.querySelector('#profile-orders-list');
+  if (list) {
+    if (state.orders.length === 0) {
+      list.innerHTML = `
+        <div class="text-center py-6 text-text-muted text-xs bg-background-secondary rounded-xl border border-border border-dashed">
+          No orders placed yet.
+        </div>`;
+    } else {
+      list.innerHTML = state.orders.map(order => `
+        <div class="bg-background-secondary border border-border rounded-xl p-3 flex justify-between items-center text-xs">
+          <div>
+            <div class="font-bold text-text-primary">${order.orderId}</div>
+            <div class="text-[10px] text-text-muted mt-0.5">${order.date} • ${order.itemsCount} ${order.itemsCount === 1 ? 'item' : 'items'}</div>
+          </div>
+          <div class="text-right">
+            <div class="font-bold text-success">₹${order.total}</div>
+            <div class="text-[9px] bg-success-10 text-success font-semibold px-2 py-0.5 rounded-full inline-block mt-1">Dispatched</div>
+          </div>
+        </div>
+      `).join('');
+    }
+  }
+
+  modal.classList.add('active');
+}
+
+// --- TOAST ALERTS SYSTEM (FIX 1) ---
+export function showToast(message, type = 'success') {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  
+  const icon = type === 'success' 
+    ? `<svg class="toast-icon-success text-success" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 20px; height: 20px;"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>`
+    : type === 'error'
+    ? `<svg class="toast-icon-error text-danger" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 20px; height: 20px;"><path stroke-linecap="round" stroke-linejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>`
+    : `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 20px; height: 20px; color: var(--accent-color);"><path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 1 1 1.063 1.06l-.041.02a.75.75 0 0 1-1.063-1.06Zm-9.62 1.62c-.22-.387-.218-.868.004-1.253a8.966 8.966 0 0 1 2.3-2.61c.427-.34.98-.52 1.547-.506A8.96 8.96 0 0 1 12 10.25a8.96 8.96 0 0 1 6.53-2.987c.567-.014 1.12.166 1.547.506a8.966 8.966 0 0 1 2.3 2.61c.222.385.224.866.004 1.253a8.966 8.966 0 0 1-2.3 2.61c-.427.34-.98.52-1.547.506A8.96 8.96 0 0 1 12 13.75a8.96 8.96 0 0 1-6.53 2.987c-.567.014-1.12-.166-1.547-.506a8.966 8.966 0 0 1-2.3-2.61Z" /></svg>`;
+
+  toast.innerHTML = `
+    <div class="toast-icon">${icon}</div>
+    <div class="toast-content">
+      <p class="toast-message text-text-primary text-xs font-semibold leading-relaxed">${message}</p>
+    </div>
+    <div class="toast-progress ${type === 'success' ? 'toast-success-progress' : type === 'error' ? 'toast-error-progress' : ''}"></div>
+  `;
+
+  container.appendChild(toast);
+
+  // Fade out smoothly and remove automatically after 2.5 seconds
+  setTimeout(() => {
+    toast.classList.add('removing');
+    toast.addEventListener('animationend', () => toast.remove());
+  }, 2500);
+}
+
+// --- BACK TO TOP ---
+function initBackToTop() {
+  const btn = document.getElementById('back-to-top-btn');
+  if (!btn) return;
+
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 400) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+
+  btn.addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+}
+
+
+
+// --- PRODUCT CARDS GENERATION (FIX 4, FIX 7) ---
+export function createProductCardHtml(product, isSlider = false) {
+  const cardHtml = `
+    <div class="product-card group bg-surface border border-border rounded-2xl p-4 flex flex-col relative transition-all duration-300 hover:-translate-y-1 hover:border-primary hover:shadow-premium-lg h-full cursor-grab active:cursor-grabbing w-full" data-product-id="${product.id}">
+      <!-- Image Container -->
+      <div class="aspect-square bg-background-secondary rounded-xl relative overflow-hidden cursor-pointer mb-3" data-action="view-details">
+        <img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]" src="${product.image}" alt="${product.title}" loading="lazy">
+        <!-- Price Badge on top-right of image -->
+        <span class="absolute top-3 right-3 bg-constant-dark/60 text-constant-white text-xs font-bold px-2 py-1 rounded-lg shadow-premium-sm">₹${product.price}</span>
+      </div>
+      
+      <!-- Card Body Content -->
+      <div class="flex flex-col flex-1 gap-1">
+        <!-- Category name in uppercase -->
+        <span class="text-[10px] uppercase font-bold text-text-muted tracking-widest">${product.category}</span>
+        
+        <!-- Product Title -->
+        <h3 class="text-sm font-bold text-text-primary leading-snug cursor-pointer line-clamp-2 h-10 hover:text-primary transition-colors mb-1" data-action="view-details">${product.title}</h3>
+        
+        <!-- Rating Row: 5 Stars + rating score + review count (Fix 7) -->
+        <div class="flex items-center gap-1 text-xs text-text-secondary mb-3">
+          <span class="inline-flex items-center gap-[2px] text-rating">
+            ${getStarsHtml(product.rating)}
+          </span>
+          <span class="font-extrabold text-text-primary ml-1">${product.rating}</span>
+          <span class="text-text-muted">(${100 + product.id * 7})</span>
+        </div>
+        
+        <!-- Full width Add to Cart button -->
+        <button class="w-full mt-auto btn-premium py-2.5 text-xs gap-2 add-to-cart-btn cursor-pointer" data-product-id="${product.id}" title="Add to Cart" aria-label="Add ${product.title} to cart">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" /></svg>
+          Add to Cart
+        </button>
+      </div>
+    </div>
+  `;
+
+  if (isSlider) {
+    return `
+      <div class="product-card-container min-w-[280px] shrink-0 snap-start">
+        ${cardHtml}
+      </div>
+    `;
+  }
+  return cardHtml;
+}
+
+export function getStarsHtml(rating) {
+  const fullStars = Math.floor(rating);
+  const hasHalf = rating % 1 >= 0.4;
+  let html = '';
+  for (let i = 1; i <= 5; i++) {
+    if (i <= fullStars) {
+      html += `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5 text-rating"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" clip-rule="evenodd" /></svg>`;
+    } else if (i === fullStars + 1 && hasHalf) {
+      html += `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5 text-rating"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" clip-rule="evenodd" /></svg>`;
+    } else {
+      html += `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5 text-text-muted"><path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499c.15-.352.65-.352.8 0l2.122 5.101 5.5 1.002c.408.075.57.579.28.87l-4 3.902 1.082 5.48c.081.408-.344.717-.7.5l-4.9-3.003-4.9 3.003c-.356.217-.781-.092-.7-.5l1.082-5.48-4-3.902c-.29-.29-.128-.795.28-.87l5.5-1.002 2.122-5.101Z" /></svg>`;
+    }
+  }
+  return html;
+}
+
+export function bindCardInteractions(containerElement) {
+  containerElement.querySelectorAll('[data-action="view-details"]').forEach(el => {
+    el.addEventListener('click', (e) => {
+      const card = e.target.closest('.product-card');
+      const id = parseInt(card.getAttribute('data-product-id'));
+      openProductModal(id);
+    });
+  });
+
+}
+
+// --- SPA ROUTER (FIX 5) ---
+const routes = {
+  '#home': () => renderHomepage(),
+  '#shop': () => renderCategoryPage(),
+  '#checkout': () => renderCheckoutPage()
+};
+
+export function clearAllFilters() {
+  state.filters.searchQuery = '';
+  state.filters.categories = [];
+  state.filters.maxPrice = 6000;
+  state.filters.minRating = 0;
+  state.filters.sortBy = 'featured';
+  
+  const searchInput = document.getElementById('search-input');
+  if (searchInput) searchInput.value = '';
+  const mobileSearchInput = document.getElementById('mobile-search-input');
+  if (mobileSearchInput) mobileSearchInput.value = '';
+}
+
+function handleRouting() {
+  const hash = window.location.hash || '#home';
+
+  // Dynamic Sub-Navbar Visibility Rules (FIX 5)
+  // Visible ONLY when currently inside the shop catalog page (#shop)
+  const subNavbar = document.querySelector('.sub-navbar');
+  if (subNavbar) {
+    if (hash === '#shop') {
+      subNavbar.classList.remove('hidden');
+      subNavbar.classList.remove('md:hidden');
+      subNavbar.classList.add('md:block');
+    } else {
+      subNavbar.classList.remove('md:block');
+      subNavbar.classList.add('md:hidden');
+      subNavbar.classList.add('hidden');
+    }
+  }
+
+  const desktopLinks = document.querySelectorAll('.nav-links a');
+  desktopLinks.forEach(link => {
+    if (link.getAttribute('href') === hash) {
+      link.classList.add('active');
+    } else {
+      link.classList.remove('active');
+    }
+  });
+  
+ const subNavbarLinks = document.querySelectorAll('.sub-nav-link');
+  const activeCategory = state.filters.categories.length > 0 ? state.filters.categories[0] : 'all';
+  subNavbarLinks.forEach(link => {
+    const linkCat = link.getAttribute('data-category');
+    if (linkCat === activeCategory) {
+      link.classList.add('active');
+    } else {
+      link.classList.remove('active');
+    }
+  });
+  
+  const footerLinks = [
+    { id: 'footer-link-home', href: '#home' },
+    { id: 'footer-link-shop', href: '#shop' }
+  ];
+  footerLinks.forEach(linkInfo => {
+    const el = document.getElementById(linkInfo.id);
+    if (el) {
+      if (linkInfo.href === hash) {
+        el.classList.add('active');
+      } else {
+        el.classList.remove('active');
+      }
+    }
+  });
+
+  const routeFn = routes[hash] || routes['#home'];
+  routeFn();
+
+  window.scrollTo({ top: 0, behavior: 'instant' });
+}
+
+// Fire app boot
+document.addEventListener('DOMContentLoaded', init);
