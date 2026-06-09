@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+.rating-radio {
+   appearance: none;
+   background-color: transparent;
+   @apply border-zinc-200 dark:border-zinc-700;
+   border-width: 2px;
+   border-style: solid;
+   width: 1rem;
+   height: 1rem;
+   border-radius: 50%;
+   display: inline-block;
+   position: relative;
+}
+.rating-radio:checked {
+   @apply border-zinc-950 dark:border-white;
+}
+.rating-radio:checked::after {
+   content: '';
+   position: absolute;
+   top: 50%; left: 50%;
+   transform: translate(-50%, -50%);
+   width: 0.5rem; height: 0.5rem;
+   border-radius: 50%;
+   @apply bg-zinc-950 dark:bg-white;
+}
+
+/* Drag and Drop Custom Animations and Highlight Styles */
+@keyframes cartBounce {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.4); }
+}
+.cart-bounce-anim {
+  animation: cartBounce 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) 1;
+}
+
+@keyframes dropPulse {
+  0%, 100% { border-color: #f59e0b; opacity: 1; transform: scale(1); }
+  50% { border-color: #d97706; opacity: 0.85; transform: scale(1.02); }
+}
+.cart-dropzone-active {
+  animation: dropPulse 1.5s infinite ease-in-out;
+  @apply bg-zinc-100 dark:bg-zinc-800 border-yellow-500 border-2;
+}
+
+@keyframes pulseGold {
+  0%, 100% { box-shadow: 0 0 0 0px rgba(245, 158, 11, 0.4); transform: scale(1); }
+  50% { box-shadow: 0 0 15px 4px rgba(245, 158, 11, 0.6); transform: scale(1.1); }
+}
+.cart-btn-drag-over {
+  animation: pulseGold 1.2s infinite ease-in-out;
+  @apply border-amber-500 text-amber-500 bg-amber-50 dark:bg-amber-950/20;
+}
+
+@keyframes flashEmerald {
+  0% {
+    background-color: rgba(16, 185, 129, 0.15);
+    border-color: rgba(16, 185, 129, 0.8);
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.25);
+  }
+  100% {
+    background-color: inherit;
+    border-color: inherit;
+    box-shadow: none;
+  }
+}
+.drop-success-flash {
+  animation: flashEmerald 1.8s cubic-bezier(0.4, 0, 0.2, 1) 1;
+}
+
+/* Draggable item drag style helper */
+.dragged-item-ghost {
+  opacity: 0.35;
+  transform: scale(0.95);
+  border-style: dashed;
+}
+
+/* Helper indicator bar styled elegantly */
+.drag-helper-banner-show {
+  transform: translateY(0);
+}
+
