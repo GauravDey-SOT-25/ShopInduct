@@ -75,7 +75,7 @@ export function renderHeader() {
           <div class="flex gap-6 animate-fade-in">
             <a href="#shop" class="sub-nav-link active relative text-[11px] font-semibold text-text-secondary tracking-wider uppercase py-2 hover:text-primary transition-colors" data-category="all">All Catalog</a>
             <a href="#shop" class="sub-nav-link relative text-[11px] font-semibold text-text-secondary tracking-wider uppercase py-2 hover:text-primary transition-colors" data-category="Electronics">Electronics</a>
-            <a href="#shop" class="sub-nav-link relative text-[11px] font-semibold text-text-secondary tracking-wider uppercase py-2 hover:text-primary transition-colors" data-category="Fashion">Fashion</a>
+            <a href="#shop" class="sub-nav-link relative text-[11px] font-semibold text-text-secondary tracking-wider uppercase py-2 hover:text-primary transition-colors" data-category="Clothing">Clothing</a>
             <a href="#shop" class="sub-nav-link relative text-[11px] font-semibold text-text-secondary tracking-wider uppercase py-2 hover:text-primary transition-colors" data-category="Home & Lifestyle">Home & Lifestyle</a>
             <a href="#shop" class="sub-nav-link relative text-[11px] font-semibold text-text-secondary tracking-wider uppercase py-2 hover:text-primary transition-colors" data-category="Books">Books</a>
             <a href="#shop" class="sub-nav-link relative text-[11px] font-semibold text-text-secondary tracking-wider uppercase py-2 hover:text-primary transition-colors" data-category="Sports">Sports</a>
