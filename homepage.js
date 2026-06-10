@@ -88,7 +88,7 @@ export function renderHomepage() {
           </div>
 
           <!-- Clothing Category -->
-          <div class="relative rounded-2xl overflow-hidden aspect-[4/3] cursor-pointer shadow-premium-md group category-tile" data-category="Fashion">
+          <div class="relative rounded-2xl overflow-hidden aspect-[4/3] cursor-pointer shadow-premium-md group category-tile" data-category="Clothing">
             <img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.05]" src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=600&q=80" alt="Fashion Category" loading="lazy">
             <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-6 text-white">
               <h3 class="text-lg font-bold text-white mb-1">Clothing</h3>
@@ -97,7 +97,7 @@ export function renderHomepage() {
           </div>
 
           <!-- Home Category -->
-          <div class="relative rounded-2xl overflow-hidden aspect-[4/3] cursor-pointer shadow-premium-md group category-tile" data-category="Home & Lifestyle">
+          <div class="relative rounded-2xl overflow-hidden aspect-[4/3] cursor-pointer shadow-premium-md group category-tile" data-category="Home & Kitchen">
             <img class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.05]" src="https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=600&q=80" alt="Home & Lifestyle Category" loading="lazy">
             <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-6 text-white">
               <h3 class="text-lg font-bold text-white mb-1">Home & Kitchen</h3>
