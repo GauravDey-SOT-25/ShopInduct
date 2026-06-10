@@ -214,7 +214,7 @@ function initSearchAutocomplete() {
       dropdown.querySelectorAll('.search-suggest-item').forEach(item => {
         item.onclick = () => {
           const id = parseInt(item.getAttribute('data-product-id'));
-          openProductModal(id);
+          window.location.hash = `#product?id=${id}`;
           dropdown.classList.add('hidden');
           if (searchInput) searchInput.value = '';
           if (mobileSearchInput) mobileSearchInput.value = '';

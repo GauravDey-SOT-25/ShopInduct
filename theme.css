@@ -760,3 +760,64 @@ textarea::placeholder,
     width: 100% !important;
   }
 }
+
+/* 11. Product Detail Page Views & Buttons Styling */
+#detailBuyNowBtn {
+  background-color: var(--primary-color) !important;
+  color: var(--text-inverse) !important;
+  border: 1px solid var(--primary-color) !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+#detailBuyNowBtn:hover {
+  background-color: var(--primary-hover) !important;
+  border-color: var(--primary-hover) !important;
+  transform: scale(1.02) !important;
+}
+
+#detailAddToCartBtn {
+  background-color: var(--card-bg) !important;
+  color: var(--text-primary) !important;
+  border: 2px solid var(--border-color) !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+#detailAddToCartBtn:hover {
+  background-color: var(--card-hover) !important;
+  border-color: var(--border-hover) !important;
+}
+
+@media (max-width: 640px) {
+  #productDetailView > div {
+    padding: 1.25rem !important;
+    gap: 1.5rem !important;
+    border-radius: 1.5rem !important;
+  }
+  #productDetailView {
+    padding-top: 1rem !important;
+    padding-bottom: 1.5rem !important;
+  }
+}
+
+/* 12. Cart Drawer Drag Active highlight */
+.cart-drawer.drag-active {
+  border-left: 2px dashed var(--primary-color) !important;
+  box-shadow: 0 0 30px var(--primary-glow) !important;
+  background-color: color-mix(in srgb, var(--card-bg) 95%, var(--primary-color)) !important;
+}
+
+/* 13. Stars Ratings Color */
+svg.text-rating {
+  color: var(--accent-color) !important;
+  fill: var(--accent-color) !important;
+}
+
+/* 14. Already Added to Cart button state */
+.add-to-cart-btn.added {
+  background: color-mix(in srgb, var(--success-color) 12%, transparent) !important;
+  border-color: var(--success-color) !important;
+  color: var(--success-color) !important;
+}
+.add-to-cart-btn.added svg {
+  stroke: var(--success-color) !important;
+}

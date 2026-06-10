@@ -3,6 +3,7 @@ import { renderFooter } from './footer.js';
 import { renderHomepage } from './homepage.js';
 import { renderCategoryPage, renderCatalog } from './categorypage.js';
 import { renderCheckoutPage } from './checkoutpage.js';
+import { renderProductDetailPage, syncProductDetailAddToCartState } from './productdetailpage.js';
 import { getAllProducts } from './productservice.js';
 import { currentUser, login as apiLogin, register as apiRegister, logout as apiLogout } from './auth.js';
 import { updateUserInfo } from './users.js';
@@ -246,6 +247,25 @@ function injectGlobalContainers() {
       </div>
     </div>
 
+    <!-- Delete Confirmation Modal overlay -->
+    <div class="modal-backdrop flex items-center justify-center p-4 bg-background-overlay/70 backdrop-blur-sm" id="delete-confirm-modal-backdrop">
+      <div class="modal-content relative bg-surface border border-border rounded-2xl max-w-[400px] w-full shadow-premium-xl overflow-hidden transform scale-95 transition-all duration-300">
+        <div class="p-8 flex flex-col items-center text-center gap-4">
+          <div class="bg-danger-10 text-danger w-12 h-12 rounded-full flex items-center justify-center text-xl shadow-danger-glow">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" /></svg>
+          </div>
+          <h3 class="text-base font-bold text-text-primary">Delete Item from Cart?</h3>
+          <p class="text-xs text-text-secondary leading-relaxed delete-confirm-message">
+            Are you sure you want to remove this item from your shopping cart? This action cannot be undone.
+          </p>
+          <div class="flex gap-3 w-full mt-2">
+            <button class="flex-1 btn-premium py-2 text-xs" id="delete-confirm-cancel-btn">Cancel</button>
+            <button class="flex-1 py-2 text-xs bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 cursor-pointer shadow-md" id="delete-confirm-ok-btn">Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- User Profile & Orders Modal Overlay -->
     <div class="modal-backdrop flex items-center justify-center p-4 bg-background-overlay/70 backdrop-blur-sm" id="profile-modal-backdrop">
       <div class="modal-content relative bg-surface border border-border rounded-2xl max-w-[500px] w-full shadow-premium-xl overflow-hidden transform scale-95 transition-all duration-300">
@@ -458,6 +478,42 @@ function initGlobalModalClosers() {
   setupClosers(successModal);
   setupClosers(profileModal);
   setupClosers(authModal);
+ 
+  const deleteConfirmModal = document.getElementById('delete-confirm-modal-backdrop');
+  if (deleteConfirmModal) {
+    const cancelBtn = document.getElementById('delete-confirm-cancel-btn');
+    const okBtn = document.getElementById('delete-confirm-ok-btn');
+    
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', () => {
+        deleteConfirmModal.classList.remove('active');
+        if (deleteConfirmResolver) {
+          deleteConfirmResolver(false);
+          deleteConfirmResolver = null;
+        }
+      });
+    }
+    
+    if (okBtn) {
+      okBtn.addEventListener('click', () => {
+        deleteConfirmModal.classList.remove('active');
+        if (deleteConfirmResolver) {
+          deleteConfirmResolver(true);
+          deleteConfirmResolver = null;
+        }
+      });
+    }
+
+    deleteConfirmModal.addEventListener('click', (e) => {
+      if (e.target === deleteConfirmModal) {
+        deleteConfirmModal.classList.remove('active');
+        if (deleteConfirmResolver) {
+          deleteConfirmResolver(false);
+          deleteConfirmResolver = null;
+        }
+      }
+    });
+  }
 
   const successContinueBtn = document.getElementById('success-continue-btn');
   if (successContinueBtn && successModal) {
@@ -466,14 +522,36 @@ function initGlobalModalClosers() {
       window.location.hash = '#home';
     });
   }
-
+ 
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       if (productModal) productModal.classList.remove('active');
       if (successModal) successModal.classList.remove('active');
       if (profileModal) profileModal.classList.remove('active');
       if (authModal) authModal.classList.remove('active');
+      if (deleteConfirmModal) {
+        deleteConfirmModal.classList.remove('active');
+        if (deleteConfirmResolver) {
+          deleteConfirmResolver(false);
+          deleteConfirmResolver = null;
+        }
+      }
     }
+  });
+}
+
+let deleteConfirmResolver = null;
+
+export function confirmAction(message) {
+  const modal = document.getElementById('delete-confirm-modal-backdrop');
+  if (!modal) return Promise.resolve(false);
+  
+  const msgEl = modal.querySelector('.delete-confirm-message');
+  if (msgEl) msgEl.textContent = message;
+  
+  modal.classList.add('active');
+  return new Promise((resolve) => {
+    deleteConfirmResolver = resolve;
   });
 }
 
@@ -483,6 +561,8 @@ export function openProductModal(productId) {
 
   const modal = document.getElementById('product-modal-backdrop');
   if (!modal) return;
+
+  modal.setAttribute('data-product-id', productId);
 
   modal.querySelector('.modal-product-img-wrapper img').src = product.image;
   modal.querySelector('.modal-product-img-wrapper img').alt = product.title;
@@ -515,11 +595,18 @@ export function openProductModal(productId) {
     const newCta = cta.cloneNode(true);
     cta.parentNode.replaceChild(newCta, cta);
     newCta.addEventListener('click', () => {
-      addToCart(product.id);
-      modal.classList.remove('active');
+      const isInCart = state.cart.some(item => item.id === product.id);
+      if (isInCart) {
+        modal.classList.remove('active');
+        toggleCartDrawer(true);
+      } else {
+        addToCart(product.id);
+        modal.classList.remove('active');
+      }
     });
   }
 
+  syncAllAddToCartButtons();
   modal.classList.add('active');
 }
 
@@ -815,12 +902,56 @@ export function getStarsHtml(rating) {
   return html;
 }
 
+export function syncAllAddToCartButtons() {
+  // 1. Sync list page card buttons
+  document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
+    const productId = parseInt(btn.getAttribute('data-product-id'));
+    if (isNaN(productId)) return;
+    const isInCart = state.cart.some(item => item.id === productId);
+    if (isInCart) {
+      btn.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 text-emerald-500"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
+        Already Added
+      `;
+      btn.classList.add('added');
+    } else {
+      btn.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" /></svg>
+        Add to Cart
+      `;
+      btn.classList.remove('added');
+    }
+  });
+
+  // 2. Sync quick view modal button if active
+  const modal = document.getElementById('product-modal-backdrop');
+  if (modal && modal.classList.contains('active')) {
+    const productId = parseInt(modal.getAttribute('data-product-id'));
+    if (!isNaN(productId)) {
+      const cta = modal.querySelector('.modal-add-to-cart-btn');
+      if (cta) {
+        const isInCart = state.cart.some(item => item.id === productId);
+        if (isInCart) {
+          cta.innerHTML = `Already Added`;
+          cta.classList.add('added');
+        } else {
+          cta.innerHTML = `Add to Cart`;
+          cta.classList.remove('added');
+        }
+      }
+    }
+  }
+
+  // 3. Sync product detail page button
+  syncProductDetailAddToCartState();
+}
+
 export function bindCardInteractions(containerElement) {
   containerElement.querySelectorAll('[data-action="view-details"]').forEach(el => {
     el.addEventListener('click', (e) => {
       const card = e.target.closest('.product-card');
       const id = parseInt(card.getAttribute('data-product-id'));
-      openProductModal(id);
+      window.location.hash = `#product?id=${id}`;
     });
   });
 
@@ -830,15 +961,23 @@ export function bindCardInteractions(containerElement) {
       e.stopPropagation();
       const card = e.target.closest('.product-card');
       const id = parseInt(card.getAttribute('data-product-id'));
-      addToCart(id);
+      const isInCart = state.cart.some(item => item.id === id);
+      if (isInCart) {
+        toggleCartDrawer(true);
+      } else {
+        addToCart(id);
+      }
     });
   });
+
+  syncAllAddToCartButtons();
 }
 
 // --- DOCK DRAG & DROP FOR CART DRAWERS ---
 function initDragAndDrop() {
   const zone = document.getElementById('cart-dropzone-indicator');
   const cartBtn = document.getElementById('nav-cart-btn');
+  const drawer = document.getElementById('cart-drawer');
 
   document.body.addEventListener('dragstart', (e) => {
     const card = e.target.closest('.product-card');
@@ -849,13 +988,33 @@ function initDragAndDrop() {
       
       // Highlight targets
       if (zone) zone.classList.add('dragover');
+      if (drawer) drawer.classList.add('drag-active');
       toggleCartDrawer(true);
     }
   });
 
   document.body.addEventListener('dragend', () => {
     if (zone) zone.classList.remove('dragover');
+    if (drawer) drawer.classList.remove('drag-active');
   });
+
+  if (drawer) {
+    drawer.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+      if (zone) zone.classList.add('dragover');
+    });
+
+    drawer.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const id = parseInt(e.dataTransfer.getData('text/plain'));
+      if (!isNaN(id)) {
+        addToCart(id);
+      }
+      if (zone) zone.classList.remove('dragover');
+      if (drawer) drawer.classList.remove('drag-active');
+    });
+  }
 
   if (zone) {
     zone.addEventListener('dragover', (e) => {
@@ -980,6 +1139,9 @@ export function renderCartDrawer() {
       removeFromCart(id);
     };
   });
+
+  // Sync all add-to-cart buttons across the page
+  syncAllAddToCartButtons();
 }
 
 function initCartDrawerActions() {
@@ -1033,22 +1195,45 @@ export function addToCart(productId) {
   apiAddToCart(userId, productId);
   syncStateCart();
   renderCartDrawer();
+  syncAllAddToCartButtons();
   showToast("Added to Cart", "success");
 }
 
-export function removeFromCart(productId) {
+
+export function confirmCartDeletion() {
+  return new Promise((resolve) => {
+    deleteConfirmResolver = resolve;
+    const modal = document.getElementById('delete-confirm-modal-backdrop');
+    if (modal) {
+      modal.classList.add('active');
+    }
+  });
+}
+
+export async function removeFromCart(productId) {
+  const confirmed = await confirmAction('Are you sure you want to remove this item from your shopping cart?');
+  if (!confirmed) return;
   const userId = currentUser ? currentUser.id : 'guest';
   apiRemoveFromCart(userId, productId);
   syncStateCart();
   renderCartDrawer();
+  syncAllAddToCartButtons();
   showToast("Removed from Cart", "info");
 }
 
-export function updateQuantity(productId, delta) {
+export async function updateQuantity(productId, delta) {
+  if (delta === -1) {
+    const item = state.cart.find(i => i.id === productId);
+    if (item && item.quantity === 1) {
+      const confirmed = await confirmAction('Are you sure you want to remove this item from your cart?');
+      if (!confirmed) return;
+    }
+  }
   const userId = currentUser ? currentUser.id : 'guest';
   apiUpdateQuantity(userId, productId, delta);
   syncStateCart();
   renderCartDrawer();
+  syncAllAddToCartButtons();
 }
 
 export function clearCart() {
@@ -1062,7 +1247,14 @@ export function clearCart() {
 const routes = {
   '#home': () => renderHomepage(),
   '#shop': () => renderCategoryPage(),
-  '#checkout': () => renderCheckoutPage()
+  '#checkout': () => renderCheckoutPage(),
+  '#product': () => {
+    const hash = window.location.hash;
+    const queryString = hash.includes('?') ? hash.split('?')[1] : '';
+    const urlParams = new URLSearchParams(queryString);
+    const id = parseInt(urlParams.get('id'));
+    renderProductDetailPage(id);
+  }
 };
 
 export function clearAllFilters() {
@@ -1079,7 +1271,8 @@ export function clearAllFilters() {
 }
 
 function handleRouting() {
-  const hash = window.location.hash || '#home';
+  const fullHash = window.location.hash || '#home';
+  const hash = fullHash.split('?')[0];
 
   // Dynamic Sub-Navbar Visibility Rules
   const subNavbar = document.querySelector('.sub-navbar');
