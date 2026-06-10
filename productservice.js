@@ -1,5 +1,6 @@
 const PRODUCT_URL =
-  "https://raw.githubusercontent.com/EKLAVYAGO/product/refs/heads/main/pr.json";
+  "https://raw.githubusercontent.com/EKLAVYAGO/Products_main/refs/heads/main/products.json";
+
 
 export async function getProducts(page = 1, limit = 10) {
 

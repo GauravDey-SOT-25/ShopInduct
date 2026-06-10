@@ -21,7 +21,8 @@ export const state = {
     categories: [],
     maxPrice: 6000,
     minRating: 0,
-    sortBy: 'featured'
+    sortBy: 'featured',
+    searchInDescription: true
   },
   promoApplied: null
 };

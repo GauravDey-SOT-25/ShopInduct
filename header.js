@@ -195,7 +195,8 @@ function initSearchAutocomplete() {
 
     const matches = state.products.filter(p => 
       p.title.toLowerCase().includes(inputVal.toLowerCase()) || 
-      p.category.toLowerCase().includes(inputVal.toLowerCase())
+      p.category.toLowerCase().includes(inputVal.toLowerCase()) ||
+      (state.filters.searchInDescription && p.description && p.description.toLowerCase().includes(inputVal.toLowerCase()))
     ).slice(0, 5);
 
     if (matches.length > 0 && dropdown) {

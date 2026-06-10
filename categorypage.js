@@ -97,6 +97,15 @@ export function renderCategoryPage() {
             </label>
           </div>
 
+          <!-- Search Options -->
+          <div class="flex flex-col gap-3 pb-5 border-b border-border-80">
+            <span class="text-sm font-semibold text-text-primary">Search Options</span>
+            <label class="flex items-center gap-2 text-sm text-text-secondary cursor-pointer">
+              <input type="checkbox" id="search-in-description-checkbox" class="w-4 h-4 rounded text-primary border-border focus:ring-primary/20 cursor-pointer">
+              Search in Description
+            </label>
+          </div>
+
           <button class="btn-premium px-6 py-2.5 text-xs mt-auto cursor-pointer" id="filters-clear-all-btn">
             Clear All Filters
           </button>
@@ -172,6 +181,16 @@ function initCatalogPageEvents() {
     });
   });
 
+  // Search Options
+  const descCheckbox = document.getElementById("search-in-description-checkbox");
+  if (descCheckbox) {
+    descCheckbox.checked = state.filters.searchInDescription;
+    descCheckbox.addEventListener("change", (e) => {
+      state.filters.searchInDescription = e.target.checked;
+      renderCatalog();
+    });
+  }
+
   // Mobile drawer filter collapsible buttons
   const mobileToggle = document.getElementById("mobile-filter-toggle-btn");
   const closeFilter = document.getElementById("mobile-filter-close-btn");
@@ -201,6 +220,7 @@ function initCatalogPageEvents() {
     state.filters.categories = [];
     state.filters.searchQuery = '';
     state.filters.sortBy = 'featured';
+    state.filters.searchInDescription = true;
 
     if (priceRangeInput) {
       priceRangeInput.value = 25000;
@@ -216,6 +236,9 @@ function initCatalogPageEvents() {
     if (searchInput) searchInput.value = '';
     const mobileSearchInput = document.getElementById('mobile-search-input');
     if (mobileSearchInput) mobileSearchInput.value = '';
+
+    const descCheckbox = document.getElementById("search-in-description-checkbox");
+    if (descCheckbox) descCheckbox.checked = true;
 
     renderCatalog();
   };
@@ -251,6 +274,12 @@ export function renderCatalog() {
     }
   });
 
+  // Sync search in description checkbox
+  const descCheckbox = document.getElementById("search-in-description-checkbox");
+  if (descCheckbox) {
+    descCheckbox.checked = state.filters.searchInDescription;
+  }
+
   // Filtering
   let filtered = state.products.filter(p => {
     // Category check
@@ -268,7 +297,7 @@ export function renderCatalog() {
     const matchesSearch = !query || 
       p.title.toLowerCase().includes(query) || 
       p.category.toLowerCase().includes(query) ||
-      (p.description && p.description.toLowerCase().includes(query));
+      (state.filters.searchInDescription && p.description && p.description.toLowerCase().includes(query));
 
     return matchesCategory && matchesPrice && matchesRating && matchesSearch;
   });
