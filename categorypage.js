@@ -49,8 +49,8 @@ export function renderCategoryPage() {
               <button type="button" class="category-pill-btn w-full text-left px-4 py-2.5 text-xs btn-premium" data-category="Electronics">
                 Electronics
               </button>
-              <button type="button" class="category-pill-btn w-full text-left px-4 py-2.5 text-xs btn-premium" data-category="Fashion">
-                Fashion
+              <button type="button" class="category-pill-btn w-full text-left px-4 py-2.5 text-xs btn-premium" data-category="Clothing">
+                Clothing
               </button>
               <button type="button" class="category-pill-btn w-full text-left px-4 py-2.5 text-xs btn-premium" data-category="Home & Lifestyle">
                 Home & Lifestyle
